@@ -28,7 +28,7 @@
 \method{summary}{MAMS.step_down}(object, digits=max(3, getOption("digits") - 4), \dots)
 
 \method{plot}{MAMS.step_down}(x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", 
-     ylab="Test statistic", ylim=NULL, type=NULL, \dots)
+     ylab="Test statistic", ylim=NULL, type=NULL, bty="n", \dots)
 
 
 }
@@ -45,6 +45,7 @@
   \item{ylab}{A title for the y axis (default=\code{"Test statistic"}).}
   \item{ylim}{Numeric vector of length 2, giving the y coordinates range (default=\code{"NULL"}).}
   \item{type}{Type of plot to be used (default=\code{NULL}). See \code{plot} for more details.}
+  \item{bty}{Should a box be drawn around the legend? The default \code{"n"} does not draw a box, the alternative option \code{"o"} does.}
   \item{\dots}{Further (graphical) arguments to be passed to methods.}
 }
 

@@ -154,7 +154,7 @@ summary.MAMS.step_down<-function(object, digits=max(3, getOption("digits") - 4),
 }
              
 
-plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, ...) {
+plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", ...) {
 
     get.hyp <- function(n){ # find the nth intersection hypothesis (positions of 1s in binary n)
         indlength = ceiling(log(n)/log(2)+.0000001)
@@ -169,6 +169,7 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
     }
     
     if(is.null(type))type<-"p"
+    if(is.null(bty))bty<-"n"
     if(is.null(pch))pch<-1
     if(is.null(col))col<-1:length(x$l)
     if(length(col) != length(x$l)) stop("There must be as many colours as hypotheses.")
@@ -220,5 +221,5 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
         
     }
 
-    legend("bottomright", legend=legend_text, bty="n", lty=lty, col=col)
+    legend("bottomright", legend=legend_text, bty=bty, lty=lty, col=col)
 }
