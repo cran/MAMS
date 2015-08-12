@@ -171,6 +171,7 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
     if(is.null(type))type<-"p"
     if(is.null(pch))pch<-1
     if(is.null(col))col<-1:length(x$l)
+    if(length(col) != length(x$l)) stop("There must be as many colours as hypotheses.")
     if(is.null(lty))lty<-2
     if(is.null(ylim)){
 
@@ -203,8 +204,7 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
     legend_text <- NULL
     
     #if (length(col) < length(x$l)) col <- rep(col, length(x$l))
-    if(length(col) != length(x$l)) stop("There must be as many colours as hypotheses.")
-    
+        
     for (i in 1:length(x$l)){
         legend_text <- c(legend_text, paste("H_{", paste(get.hyp(i), collapse = " "), "}"))
         legend_col <- c(col, i)
