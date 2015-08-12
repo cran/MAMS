@@ -201,13 +201,12 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
 
     
     legend_text <- NULL
-    legend_col <- NULL
-
-    if (length(col) < length(x$l)) col <- rep(col, length(x$l))
+    
+    #if (length(col) < length(x$l)) col <- rep(col, length(x$l))
     
     for (i in 1:length(x$l)){
         legend_text <- c(legend_text, paste("H_{", paste(get.hyp(i), collapse = " "), "}"))
-        legend_col <- c(legend_col, i)
+        legend_col <- c(col, i)
         if ((x$alpha_star[[i]][x$J] > 0) && (x$alpha_star[[i]][x$J] < 1)){
             
             matpoints(1:x$J, cbind(x$l[[i]], x$u[[i]]), type=type, pch=pch, col=col[i], ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
@@ -220,5 +219,5 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
         
     }
 
-    legend("bottomright", legend = legend_text, lty = lty, col = legend_col)
+    legend("bottomright", legend = legend_text, lty = lty, col = col)
 }
