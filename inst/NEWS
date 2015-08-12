@@ -1,17 +1,22 @@
 ---------------------MAMS NEWS-------------------------------------------
 
-MAMS is an R package for designing multi-arm multi stage studies. If you 
+MAMS is an R package for designing multi-arm multi-stage studies. If you 
 are using the package, please cite it as 
 
 Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett Test for 
 Multi-arm Multi-stage Clinical Studies with Treatment Selection. 
 Biometrika. 99(2):494-501.
 
-Question or suggestions about the package can be send to
+Question or suggestions about the package can be sent to
 
    jaki.thomas@gmail.com
 
 --------------------CHANGE LOG--------------------------------------------
+Version 0.6
+
+  o Bla bla
+
+--------------------------------------------------------------------------
 Version 0.5
 
   o A bug in function mams.sim corrected
@@ -47,4 +52,3 @@ Version 0.1
   o Initial release
 
 --------------------------------------------------------------------------
-
