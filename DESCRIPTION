@@ -1,8 +1,8 @@
 Package: MAMS
 Type: Package
 Title: Designing Multi-Arm Multi-Stage Studies
-Version: 0.5
-Author: Thomas Jaki <jaki.thomas@gmail.com>  and Dominic Magirr <d.magirr@gmail.co.uk> 
+Version: 0.6
+Author: Thomas Jaki <jaki.thomas@gmail.com> and Dominic Magirr <d.magirr@gmail.co.uk> 
 Maintainer: Thomas Jaki <jaki.thomas@gmail.com>
 Depends: mvtnorm
 Description: Designing multi-arm multi-stage studies with normal endpoints and known variance.

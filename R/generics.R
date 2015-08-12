@@ -66,7 +66,7 @@ plot.MAMS <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysi
     ylim <- c(r[1]-diff(r)/6,r[2]+diff(r)/6)
   }
 
-  matplot(1:x$J, cbind(x$l,x$u), type=type, pch=pch, col=col, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
+  matplot(1:x$J, cbind(x$l,x$u), type=type, pch=pch, col=col, ylab=ylab, xlab=xlab, ylim=ylim, main=main, axes=FALSE, ...)
   mtext(1:x$J,side=1,at=1:x$J)
 #  axis(side=2)
   axis(side=2,at=seq(-10,10,1))
@@ -182,7 +182,7 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
         
     }
     
-    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, col = 0, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
+    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, main=main, col=0, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
     mtext(1:x$J,side=1,at=1:x$J)
     #  axis(side=2)
     axis(side=2,at=seq(-10,10,1))
