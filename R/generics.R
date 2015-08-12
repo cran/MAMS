@@ -220,5 +220,5 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
         
     }
 
-    legend("bottomright", legend = legend_text, lty = lty, col = col)
+    legend("bottomright", legend=legend_text, bty="n", lty=lty, col=col)
 }
