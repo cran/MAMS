@@ -15,6 +15,7 @@ Question or suggestions about the package can be sent to
 Version 0.6
 
   o A few minor bugs in the plot functions corrected
+  o Arguments bty and las for the plot functions added
   o Inconsistencies in the documentation removed
 
 --------------------------------------------------------------------------
