@@ -55,21 +55,22 @@ summary.MAMS<-function(object, digits=max(3, getOption("digits") - 4), ...){
   print(res)
 }
 
-plot.MAMS <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, ...) {
+plot.MAMS <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, las=NULL, ...) {
 
   if(is.null(type))type<-"p"
   if(is.null(pch))pch<-1
   if(is.null(col))col<-1
   if(is.null(lty))lty<-2
+  if(is.null(las))las<-1
   if(is.null(ylim)){
     r<-range(x$l,x$u)
     ylim <- c(r[1]-diff(r)/6,r[2]+diff(r)/6)
   }
 
-  matplot(1:x$J, cbind(x$l,x$u), type=type, pch=pch, col=col, ylab=ylab, xlab=xlab, ylim=ylim, main=main, axes=FALSE, ...)
+  matplot(1:x$J, cbind(x$l,x$u), type=type, pch=pch, col=col, ylab=ylab, xlab=xlab, ylim=ylim, main=main, axes=FALSE, las=las, ...)
   mtext(1:x$J,side=1,at=1:x$J)
 #  axis(side=2)
-  axis(side=2,at=seq(-10,10,1))
+  axis(side=2,at=seq(-10,10,1), las=las)
   lines(x$u,lty=lty)
   lines(x$l[1:(x$J)],lty=lty)
 
@@ -154,7 +155,7 @@ summary.MAMS.step_down<-function(object, digits=max(3, getOption("digits") - 4),
 }
              
 
-plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", ...) {
+plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", las=NULL, ...) {
 
     get.hyp <- function(n){ # find the nth intersection hypothesis (positions of 1s in binary n)
         indlength = ceiling(log(n)/log(2)+.0000001)
@@ -171,6 +172,7 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
     if(is.null(type))type<-"p"
     if(is.null(bty))bty<-"n"
     if(is.null(pch))pch<-1
+    if(is.null(las))las<-1
     if(is.null(col))col<-1:length(x$l)
     if(length(col) != length(x$l)) stop("There must be as many colours as hypotheses.")
     if(is.null(lty))lty<-2
@@ -184,10 +186,10 @@ plot.MAMS.step_down <- function (x, col=NULL, pch=NULL, lty=NULL, main=NULL, xla
         
     }
     
-    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, main=main, col=0, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
+    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, main=main, col=0, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, las=las, ...)
     mtext(1:x$J,side=1,at=1:x$J)
     #  axis(side=2)
-    axis(side=2,at=seq(-10,10,1))
+    axis(side=2,at=seq(-10,10,1), las=las)
     lines(x$u[[1]],lty=lty)
     lines(x$l[[1]][1:(x$J)],lty=lty)
 
