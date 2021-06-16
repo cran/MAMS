@@ -370,19 +370,13 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
                        K=K, delta=delta, delta0=delta0, sig=sig, Sigma=Sigma) < 0)
       }
       
-      if((n - 1)==nstop){warning("The sample size search was stopped because the maximum sample size (nstop, default: 3 times the fixed sample size) was reached.")}
+      if((n - 1)==nstop){warning("The sample size search was stopped because the maximum sample size (nstop, default: 3 times the sample size of a fixed sample design) was reached.")}
       
     }else{
       n <- NULL
     }
   }
 
-  if(sample.size){
-    if (n==nstop) {
-      warning("Sample size search stopped due to nstop being reached")
-    }
-  }
-  
   res <- NULL
   res$l <- l  
   res$u <- u
