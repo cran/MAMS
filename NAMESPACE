@@ -1,11 +1,14 @@
+useDynLib(MAMS, .registration = TRUE)
+
 import(utils)
 import(mvtnorm)
+import(future)
+import(future.apply)
 
 importFrom("graphics", "axis", "legend", "lines", "matplot",
              "matpoints", "mtext", "points")
 importFrom("stats", "dnorm", "pnorm", "qnorm", "rnorm", "uniroot")
 importFrom("methods", "is")
-
 S3method(plot, MAMS)
 S3method(plot, MAMS.stepdown)
 S3method(print, MAMS)
@@ -14,7 +17,6 @@ S3method(print, MAMS.stepdown)
 S3method(summary, MAMS)
 S3method(summary, MAMS.sim)
 S3method(summary, MAMS.stepdown)
-
 export(
        mams,
        mams.sim,

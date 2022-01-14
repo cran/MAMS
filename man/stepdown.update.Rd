@@ -15,11 +15,11 @@ stepdown.update(current.mams=stepdown.mams(), nobs=NULL,
 }
 
 \arguments{
-  \item{current.mams}{The planned step-down MAMS design prior to the current interim analysis (default=stepdown.mams()).}
+  \item{current.mams}{The planned step-down MAMS design prior to the current interim analysis (=\code{defaultstepdown.mams()}).}
   \item{nobs}{Cumulative sample sizes observed on each treatment arm up to and including the current interim analysis.}
   \item{zscores}{Observed vector of test statistics at the current interim analysis.}
   \item{selected.trts}{The set of experimental treatments to be taken forward to the next stage of testing. This argument should be omitted at the final analysis.}
-  \item{nfuture}{A matrix of future cumulative sample sizes. The number of rows must be equal to the originally planned number of stages (2 or 3) minus the number of stages already observed. The number of columns must be equal to the number of treatment arms (default=NULL).}
+  \item{nfuture}{A matrix of future cumulative sample sizes. The number of rows must be equal to the originally planned number of stages (2 or 3) minus the number of stages already observed. The number of columns must be equal to the number of treatment arms (default=\code{NULL}).}
 }
 
 \details{
@@ -39,15 +39,18 @@ An object of the class MAMS.stepdown containing the following components: \cr
   \item{selected.trts}{A list containing the treatments selected for each stage.}
 }
 
+\seealso{
+  \code{\link{print.MAMS.stepdown}}, \code{\link{summary.MAMS.stepdown}}, \code{\link{plot.MAMS.stepdown}}, \code{\link{stepdown.mams}}, \code{\link{MAMS}}.
+}
+
 \references{
-Jaki T, Pallmann P and Magirr D (2019). "The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials." Journal of Statistical Software, 88(4), pp. 1-25. doi: 10.18637/jss.v088.i04
-(URL: http://doi.org/10.18637/jss.v088.i04)
+Jaki T., Pallmann P. and Magirr D. (2019), \emph{The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of Statistical Software}, 88(4), 1-25. Link: \doi{10.18637/jss.v088.i04}
 
-Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection. Biometrika, 99(2), 494-501.\cr
+Magirr D., Jaki T. and Whitehead J. (2012), \emph{A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection}, \bold{Biometrika}, 99(2), 494-501. Link: \doi{10.1093/biomet/ass002}
 
-Magirr D, Stallard N, Jaki T (2014) Flexible sequential designs for multi-arm clinical trials. Statistics in Medicine, 33(19), 3269-3279. 
+Magirr D., Stallard N. and Jaki T. (2014), \emph{Flexible sequential designs for multi-arm clinical trials}, \bold{Statistics in Medicine}, 33(19), 3269-3279. Link: \doi{10.1002/sim.6183}
 
-Stallard N, Todd S (2003) Sequential designs for phase III clinical trials incorporating treatment selection. Statistics in Medicine, 22(5), 689-703.\cr
+Stallard N. and Todd S. (2003), \emph{Sequential designs for phase III clinical trials incorporating treatment selection}, \bold{Statistics in Medicine}, 22(5), 689-703.\cr
 }
 
 \author{Dominic Magirr}
@@ -72,12 +75,12 @@ stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), zscores=c(1.1, -0.5, 0.2),
 # make adjustment for the observed sample sizes not being 
 # exactly as planned. In addition, drop treatment 2. In addition, 
 # double the planed cumulative second stage sample sizes:
-updated_mams1 <- stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
+updated_mams <- stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
                                  zscores=c(1.1, -0.5, 0.2), selected.trts=c(1, 3), 
                                  nfuture=matrix(c(40, 40, 13, 40), nrow=1, ncol=4))
 
 # Account for the observed second stage sample sizes:
-stepdown.update(updated_mams1, nobs=c(38, 41, 13, 36), zscores=c(1.9, -Inf, 1.2), 
+stepdown.update(updated_mams, nobs=c(38, 41, 13, 36), zscores=c(1.9, -Inf, 1.2), 
                 selected.trts=NULL)
 
 # 'select.best' design. Account for actually observed sample sizes 

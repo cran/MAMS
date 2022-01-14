@@ -1,6 +1,6 @@
 mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5, delta=NULL, delta0=NULL, sd=NULL,
                  ushape="obf", lshape="fixed", ufix=NULL, lfix=0, nstart=1, nstop=NULL, sample.size=TRUE, N=20,
-                 type="normal"){
+                 type="normal", parallel=TRUE, print=TRUE){
 
   #require(mvtnorm) ## the function pmvnorm is required to evaluate multivariate normal probabilities
 
@@ -23,23 +23,17 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
     list(X=X,w=w)
   }
 
-  prodsum<-function(x,l,u,r,r0,r0diff,J,K,Sigma){
+  
+  R_prodsum1 <-function(x,l,u,r,r0,r0diff,J,K,Sigma){
     ########################################################################################################
     ## x is vector of dummy variables ( the t_j in gdt paper ), l and u are boundary vectors
     ########################################################################################################
-    int<-prod(sapply(x,dnorm))
-    L<-sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+l[1]*sqrt(1+r[1]/r0[1])
-    U<-sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+u[1]*sqrt(1+r[1]/r0[1])
-    insum<-pnorm(L)
-    if(J>1){
-      for (j in 2:J){
-        L[j]<-sqrt(r[j])/r0[j]*(sqrt(r0diff[1:j])%*%x[1:j])+l[j]*sqrt(1+r[j]/r0[j])
-        U[j]<-sqrt(r[j])/r0[j]*(sqrt(r0diff[1:j])%*%x[1:j])+u[j]*sqrt(1+r[j]/r0[j])
-        insum<-insum+pmvnorm(lower=c(L[1:j-1],-Inf),upper=c(U[1:j-1],L[j]),sigma=Sigma[1:j,1:j])[1]
-      }
-    }
-    int<-int*insum^K
-    return(int)
+    .Call("C_prodsum1",
+       x2 = as.double(x), l2 = as.double(l), u2 = as.double(u),
+       r2 = as.double(r), r02 = as.double(r0), r0diff2 = as.double(r0diff),
+       J2 = as.integer(J), K2 = as.integer(K), Sigma2 = Sigma,
+       maxpts2 = as.integer(25000), releps2 = as.double(0), 
+       abseps2 = as.double(0.001), tol2 = as.double(0.0001))			
   }
 
   #############################################################################################################
@@ -50,8 +44,9 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   ##  The midpoint rule is used with a range of -6 to 6 in each dimension. 
   #############################################################################################################
 
-  typeI<-function(C,alpha,N,r,r0,r0diff,J,K,Sigma,ushape,lshape,lfix=NULL,ufix=NULL){
-
+  typeI <-function(C,alpha,N,r,r0,r0diff,J,K,Sigma,mmp,
+                   ushape,lshape,lfix=NULL,ufix=NULL,parallel=parallel,print=print){
+  
     ########################################################################
     ## the form of the boundary constraints are determined as functions of C. 
     ######################################################################## 
@@ -93,60 +88,55 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
     }
 
 
-    mmp<-mesh((1:N-.5)/N*12-6,J,rep(12/N,N))
-    evs<-apply(mmp$X,1,prodsum,l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=J,K=K,Sigma=Sigma)
+    if(parallel){
+        evs <- future.apply::future_apply(mmp$X,1,R_prodsum1,
+                    l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=J,K=K,Sigma=Sigma,
+                    future.seed=TRUE,future.packages="MAMS")
+    }else{
+        evs <- apply(mmp$X,1,R_prodsum1,
+                    l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=J,K=K,Sigma=Sigma)
+    }
+    if(print){
+        message(".",appendLF=FALSE)
+    }
     truealpha<-1-mmp$w%*%evs
     return(truealpha-alpha)
   }
+  if(print){message("\n",appendLF=FALSE)}
 
+  
   ####################################################################################
-  ## 'prodsum2' evaluates the integrand of Pi_1 according to  gdt paper:
+  ## 'R_prodsum2' evaluates the integrand of Pi_1 according to  gdt paper:
   #####################################################################################
 
-  prodsum2<-function(x,r,r0,l,u,K,delta,delta0,n,sig){
- 
-    int<-dnorm(x)  
-    int<-int*pnorm(x+(delta-delta0)*sqrt(r[1]*n)/sig)^(K-1)*pnorm(sqrt(r0[1]/r[1])*(x+delta*sqrt(r[1]*n)/sig-u[1]*sqrt(1+r[1]/r0[1])))
-    return(int)
+  R_prodsum2 <-function(x,r,r0,l,u,K,delta,delta0,n,sig){
+    .Call("C_prodsum2",
+          x2 = as.double(x), r2 = as.double(r), r02 = as.double(r0),
+          K2 = as.double(K), l2 = as.double(l), u2 = as.double(u),
+          delta2 = as.double(delta), delta02 = as.double(delta0),
+          n2 = as.double(n), sig2 = as.double(sig))			
   }
 
+
   ############################################################################################
-  ## 'prodsum3' evaluates the integrand of Pi_j for j>1.
+  ## 'R_prodsum3' evaluates the integrand of Pi_j for j>1.
   ############################################################################################ 
 
-  prodsum3 <- function(x,l,u,r,r0,r0diff,J,K,delta,delta0,n,sig,Sigma,SigmaJ){
-
-    int<-prod(sapply(x,dnorm))
-    L<-sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+l[1]*sqrt(1+r[1]/r0[1])-delta0*sqrt(r[1]*n)/sig
-    U<-sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+u[1]*sqrt(1+r[1]/r0[1])-delta0*sqrt(r[1]*n)/sig
-    insum<-pnorm(L)
-    if (J>2){
-      for (j in 2:(J-1)){
-        L[j]<-sqrt(r[j])/r0[j]*(sqrt(r0diff[1:j])%*%x[1:j])+l[j]*sqrt(1+r[j]/r0[j])-delta0*sqrt(r[j]*n)/sig
-        U[j]<-sqrt(r[j])/r0[j]*(sqrt(r0diff[1:j])%*%x[1:j])+u[j]*sqrt(1+r[j]/r0[j])-delta0*sqrt(r[j]*n)/sig
-        insum<-insum+pmvnorm(lower=c(L[1:j-1],-Inf),upper=c(U[1:j-1],L[j]),sigma=Sigma[1:j,1:j])[1]
-      }
-    }
-    U[J]<-x[J]+(delta-delta0)*sqrt(r[J]*n)/sig
-    insum<-insum+pmvnorm(lower=c(L,-Inf),upper=U,sigma=Sigma)[1]
-    int<-int*insum^(K-1)
-
-    LJ<-sqrt(r[J]/(r[J]-r[1]))*(sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+l[1]*sqrt(1+r[1]/r0[1])-delta*sqrt(r[1]*n)/sig-sqrt(r[1]/r[J])*x[J])
-    UJ<-sqrt(r[J]/(r[J]-r[1]))*(sqrt(r[1])/r0[1]*sqrt(r0diff[1])*x[1]+u[1]*sqrt(1+r[1]/r0[1])-delta*sqrt(r[1]*n)/sig-sqrt(r[1]/r[J])*x[J])
-    if (J>2){
-      for (j in 2:(J-1)){
-        LJ[j]<-sqrt(r[J]/(r[J]-r[j]))*(sqrt(r[j])/r0[j]*sqrt(r0diff[1:j])%*%x[1:j]+l[j]*sqrt(1+r[j]/r0[j])-delta*sqrt(r[j]*n)/sig-sqrt(r[j]/r[J])*x[J])
-        UJ[j]<-sqrt(r[J]/(r[J]-r[j]))*(sqrt(r[j])/r0[j]*sqrt(r0diff[1:j])%*%x[1:j]+u[j]*sqrt(1+r[j]/r0[j])-delta*sqrt(r[j]*n)/sig-sqrt(r[j]/r[J])*x[J])
-      }
-    }
-    int<-int*pmvnorm(lower=LJ,upper=UJ,sigma=SigmaJ)[1]
-    int<-int*pnorm((r0[J]/sqrt(r[J])*(x[J]+delta*sqrt(r[J]*n)/sig-u[J]*sqrt(1+r[J]/r0[J]))-(sqrt(r0diff[1:(J-1)])%*%x[1:(J-1)]))/sqrt(r0diff[J]))
-    return(int)
-
+  R_prodsum3 <-function(x,l,u,r,r0,r0diff,J,K,delta,delta0,
+                        n,sig,Sigma,SigmaJ){
+    .Call("C_prodsum3",
+          x2 = as.double(x), l2 = as.double(l), u2 = as.double(u),
+          r2 = as.double(r), r02 = as.double(r0), r0diff2 = as.double(r0diff),
+          Jfull2 = as.integer(J), K2 = as.integer(K), 
+          delta2 = as.double(delta), delta02 = as.double(delta0),
+          n2 = as.double(n), sig2 = as.double(sig),
+          Sigma2 = Sigma, SigmaJ2 = SigmaJ,
+          maxpts2 = as.integer(25000), releps2 = as.double(0), 
+          abseps2 = as.double(0.001), tol2 = as.double(0.001))
   }
 
   ######################################################################################################
-  ##  'typeII' performs the outer quadrature integrals of Pi_j j=1,...,J  using 'mesh',
+  ##  'typeII' performs the outer quadrature integrals of Pi_j j=1,...,J  using 'mesh' (stored in mmp_j),
   ##  'prodsum2' and 'prodsum3' as well as summing the Pi_1,...,Pi_J and calculates the difference 
   ##  with the nominal power.
   ##  The accuracy of the quadrature integral again depends on the choice of points and weights.
@@ -154,19 +144,27 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   ##  The midpoint rule is used with a range of -6 to 6 in each dimension. 
   ########################################################################################################
 
-  typeII<-function(n,beta,l,u,N,r,r0,r0diff,J,K,delta,delta0,sig,Sigma){
+  typeII <-function(n,beta,l,u,N,r,r0,r0diff,J,K,delta,delta0,sig,Sigma,mmp_j,parallel=parallel){
   
-    mmp<-mesh((1:N-.5)/N*12-6,1,rep(12/N,N))
-    evs<-apply(mmp$X,1,prodsum2,r=r,r0=r0,l=l,u=u,K=K,delta=delta,delta0=delta0,n=n,sig=sig)
-    pi<-mmp$w%*%evs
+    evs <- apply(mmp_j[[1]]$X,1,R_prodsum2,
+                 r=r,r0=r0,K=K,l=l,u=u,delta=delta,delta0=delta0,n=n,sig=sig)
+    pi<-mmp_j[[1]]$w%*%evs
 
     if(J>1){
       for (j in 2:J){  
         A<-diag(sqrt(r[j]/(r[j]-r[1:(j-1)])),ncol=j-1)
         SigmaJ<-A%*%(Sigma[1:(j-1),1:(j-1)]-Sigma[1:(j-1),j]%*%t(Sigma[1:(j-1),j]))%*%A
-        mmp<-mesh((1:N-.5)/N*12-6,j,rep(12/N,N))
-        evs<-apply(mmp$X,1,prodsum3,l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=j,K=K,delta=delta,delta0=delta0,n=n,sig=sig,Sigma=Sigma[1:j,1:j],SigmaJ=SigmaJ)
-        pi<-pi+mmp$w%*%evs
+        if(parallel){
+            evs <- future.apply::future_apply(mmp_j[[j]]$X,1,R_prodsum3,
+                     l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=j,K=K,delta=delta,delta0=delta0,
+                     n=n,sig=sig,Sigma=Sigma[1:j,1:j],SigmaJ=SigmaJ,
+                     future.seed=TRUE, future.packages="MAMS")
+        }else{
+            evs <- apply(mmp_j[[j]]$X,1,R_prodsum3,
+                     l=l,u=u,r=r,r0=r0,r0diff=r0diff,J=j,K=K,delta=delta,delta0=delta0,
+                     n=n,sig=sig,Sigma=Sigma[1:j,1:j],SigmaJ=SigmaJ)
+        }
+        pi<-pi+mmp_j[[j]]$w%*%evs
       }
     }
     return(1-beta-pi)
@@ -230,6 +228,16 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
     p0 <- pnorm(delta0/sqrt(2 * sd^2)) # for subsequent if(J==1 & p0==0.5)
     sig <- sd
   }
+
+  ############################################################################
+  ## gaussian quadrature's grid and weights for stages 1:J 
+  ############################################################################
+ 
+  mmp_j = as.list(rep(NA,J))
+  for(j in 1:J){
+      mmp_j[[j]] = mesh(x=(1:N-.5)/N*12-6,j,w=rep(12/N,N))
+  }
+  
   
   ############################################################################
   ## Ensure equivalent allocation ratios yield same sample size
@@ -260,6 +268,10 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   ################################
   ## Find boundaries using 'typeI'
   ################################
+
+  if(print){
+     message("   i) find lower and upper boundaries\n      ",appendLF=FALSE)
+  }
   
   # Quick & dirty fix to enable single-stage design with specification lshape="obf" 
   if(!is.function(lshape)){
@@ -270,7 +282,10 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   
   uJ<-NULL
   ## making sure that lfix is not larger then uJ
-  try(uJ<-uniroot(typeI,c(qnorm(1-alpha)/2,5),alpha=alpha,N=N,r=r,r0=r0,r0diff=r0diff,J=J,K=K,Sigma=Sigma,ushape=ushape,lshape=lshape,lfix=lfix,ufix=ufix,tol=0.001)$root, silent=TRUE)
+  try(uJ<-uniroot(typeI,c(qnorm(1-alpha)/2,5),alpha=alpha,N=N,r=r,r0=r0,r0diff=r0diff,
+                  J=J,K=K,Sigma=Sigma,mmp=mmp_j[[J]],
+                  ushape=ushape,lshape=lshape,lfix=lfix,ufix=ufix,parallel=parallel,print=print,
+                  tol=0.001)$root, silent=TRUE)
   #if(is.null(uJ)){stop("Lower boundary (lfix) is too large.")}
   if(is.null(uJ)){stop("No boundaries can be found.")}
 
@@ -313,11 +328,26 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   #########################################################
   ## Find alpha.star
   #########################################################
+  
+  if(print){
+     message("\n  ii) define alpha star\n",appendLF=FALSE)
+  }
+  
   alpha.star <- numeric(J)
-  alpha.star[1] <- typeI(u[1], alpha = 0, N = N, r = r[1], r0 = r0[1], r0diff = r0diff[1], J = 1, K = K, Sigma = Sigma, ushape = "fixed", lshape = "fixed", lfix = NULL, ufix = NULL)
+  alpha.star[1] <- typeI(u[1],
+                   alpha = 0, N = N, r = r[1], r0 = r0[1],r0diff = r0diff[1], 
+                   J = 1, K = K, Sigma = Sigma, mmp = mmp_j[[1]],                   
+                   ushape = "fixed",lshape = "fixed",lfix = NULL, ufix = NULL, 
+                   parallel = parallel, print = FALSE 
+                   )  
   if (J > 1){
       for (j in 2:J){
-          alpha.star[j] <- typeI(u[j], alpha = 0, N = N, r = r[1:j], r0 = r0[1:j], r0diff = r0diff[1:j], J = j, K = K, Sigma = Sigma, ushape = "fixed", lshape = "fixed", lfix = l[1:(j - 1)], ufix = u[1:(j - 1)])
+          alpha.star[j] <- typeI(u[j],
+                           alpha = 0, N = N, r = r[1:j], r0 = r0[1:j],r0diff = r0diff[1:j], 
+                           J = j, K = K, Sigma = Sigma, mmp = mmp_j[[j]],  
+                           ushape = "fixed",lshape = "fixed",lfix = l[1:(j - 1)],ufix = u[1:(j - 1)],
+                           parallel = parallel, print = FALSE  
+                           )
       }
   }
 
@@ -352,25 +382,38 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
     
     pow <- 0
     if(sample.size){
-      
+      if(print){
+         message(" iii) perform sample size calculation\n",appendLF=FALSE)
+      }
       if(is.null(nstop)){
         nx <- nstart
         po <- 0
         while (po==0){
           nx <- nx + 1
           po <- (typeII(nx, beta=1 - power, l=l, u=u, N=N, r=r, r0=r0, r0diff=r0diff, J=1,
-                        K=K, delta=delta, delta0=delta0, sig=sig, Sigma=Sigma) < 0)
+                        K=K, delta=delta, delta0=delta0, sig=sig, Sigma=Sigma, mmp_j = mmp_j,
+                        parallel = parallel
+                        ) < 0)
         }
         nstop <- 3 * nx
       }
-      
+      if(print){
+         message(paste0("      (maximum iteration number = ",nstop-nstart+1,")\n      "),appendLF=FALSE)
+      }      
       while (pow==0 & n<=nstop){
         n <- n + 1
-        pow <- (typeII(n, beta=1 - power, l=l, u=u, N=N, r=r, r0=r0, r0diff=r0diff, J=J,
-                       K=K, delta=delta, delta0=delta0, sig=sig, Sigma=Sigma) < 0)
+        pow <- (typeII(n, beta=1 - power, l=l, u=u, N=N, r=r, r0=r0, r0diff=r0diff, J=J, 
+                      K=K, delta=delta, delta0=delta0, sig=sig, Sigma=Sigma, mmp_j = mmp_j,
+                      parallel = parallel
+                      ) < 0)
+        if(print){
+            if(any(seq(0,nstop,50)==n)){message(n,"\n      ",appendLF=FALSE)}else{message(".",appendLF=FALSE)}
+        }
       }
-      
-      if((n - 1)==nstop){warning("The sample size search was stopped because the maximum sample size (nstop, default: 3 times the sample size of a fixed sample design) was reached.")}
+      if(print){
+         message("\n",appendLF=FALSE)
+      }
+      if((n - 1)==nstop){warning("The sample size search was stopped because the maximum sample size (nstop, default: 3 times the sample size of a fixed sample design) was reached.\n")}
       
     }else{
       n <- NULL
@@ -402,4 +445,5 @@ mams <- function(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, p=0.75, p0=0.5,
   return(res)
 
 }
+
 

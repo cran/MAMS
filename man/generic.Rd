@@ -69,6 +69,10 @@
 
 \value{Screen or graphics output.}
 
+\seealso{
+  \code{\link{mams}}, \code{\link{stepdown.mams}}, \code{\link{MAMS}}.
+}
+
 \references{
 Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection. Biometrika, 99(2), 494-501.\cr
 

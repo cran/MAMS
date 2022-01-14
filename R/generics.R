@@ -37,32 +37,34 @@ print.MAMS <- function (x, digits=max(3, getOption("digits") - 4), ...) {
 
 }
 
-summary.MAMS<-function(object, digits=max(3, getOption("digits") - 4), ...){
+summary.MAMS <-function(object, digits=max(3, getOption("digits") - 4), ...){
 
   cat(paste("Design parameters for a ", object$J, " stage trial with ", object$K, " treatments\n\n",sep=""))
 
-  if(!is.null(object$n)){
-    res <- matrix(NA,nrow=2,ncol=object$J)
-    colnames(res)<-paste("Stage",1:object$J)
-    if(object$type=="tite"){
-      rownames(res) <- c("Cumulative number of events per stage (control):", "Cumulative number of events per stage (active):")
-    }else{
-      rownames(res) <- c("Cumulative sample size per stage (control):", "Cumulative sample size per stage (active):")
-    }
+  if(object$type!="new.bounds"){  
+      if(!is.null(object$n)){
+        res <- matrix(NA,nrow=2,ncol=object$J)
+        colnames(res)<-paste("Stage",1:object$J)
+        if(object$type=="tite"){
+          rownames(res) <- c("Cumulative number of events per stage (control):", "Cumulative number of events per stage (active):")
+        }else{
+          rownames(res) <- c("Cumulative sample size per stage (control):", "Cumulative sample size per stage (active):")
+        }
+        
+        res[1,] <- ceiling(object$n*object$rMat[1,])
+        res[2,] <- ceiling(object$n*object$rMat[2,])
     
-    res[1,] <- ceiling(object$n*object$rMat[1,])
-    res[2,] <- ceiling(object$n*object$rMat[2,])
-
-    print(res)
-    
-    if(object$type=="tite"){
-      cat(paste("\nMaximum total number of events: ", object$N,"\n\n"))
-    }else{
-      cat(paste("\nMaximum total sample size: ", object$N,"\n\n"))
-    }
-  
+        print(res)
+        
+        if(object$type=="tite"){
+          cat(paste("\nMaximum total number of events: ", object$N,"\n\n"))
+        }else{
+          cat(paste("\nMaximum total sample size: ", object$N,"\n\n"))
+        }
+      
+      }
   }
-
+  
   res <- matrix(NA,nrow=2,ncol=object$J)
   colnames(res)<-paste("Stage",1:object$J)
   rownames(res) <- c("Upper bound:", "Lower bound:")
@@ -118,14 +120,14 @@ print.MAMS.sim <- function (x, digits=max(3, getOption("digits") - 4), ...) {
 
 }
 
-summary.MAMS.sim<-function(object, digits=max(3, getOption("digits") - 4), ...){
+summary.MAMS.sim <-function(object, digits=max(3, getOption("digits") - 4), ...){
 
   print(object)
 
 }
 
 
-print.MAMS.stepdown<- function (x, digits=max(3, getOption("digits") - 4), ...) {
+print.MAMS.stepdown <- function (x, digits=max(3, getOption("digits") - 4), ...) {
 
     get.hyp <- function(n){ # find the nth intersection hypothesis (positions of 1s in binary n)
         indlength = ceiling(log(n)/log(2)+.0000001)
@@ -163,7 +165,7 @@ print.MAMS.stepdown<- function (x, digits=max(3, getOption("digits") - 4), ...) 
     }
 }
 
-summary.MAMS.stepdown<-function(object, digits=max(3, getOption("digits") - 4), ...){
+summary.MAMS.stepdown <-function(object, digits=max(3, getOption("digits") - 4), ...){
 
   print(object)
 

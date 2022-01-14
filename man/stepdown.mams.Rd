@@ -23,7 +23,7 @@ stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
 }
 
 \details{
-The function implements the methods described in Magirr et al. (2014) to find individual boundaries for all intersection hypotheses.
+The function implements the methods described in Magirr et al (2014) to find individual boundaries for all intersection hypotheses.
 }
 
 \value{
@@ -40,15 +40,18 @@ An object of the class MAMS.stepdown containing the following components: \cr
 
 }
 
+\seealso{
+  \code{\link{print.MAMS.stepdown}}, \code{\link{summary.MAMS.stepdown}}, \code{\link{plot.MAMS.stepdown}}, \code{\link{stepdown.update}}, \code{\link{MAMS}}.
+}
+
 \references{
-Jaki T, Pallmann P and Magirr D (2019). "The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials."" Journal of Statistical Software, 88(4), pp. 1-25. doi: 10.18637/jss.v088.i04
-(URL: http://doi.org/10.18637/jss.v088.i04)
+Jaki T., Pallmann P. and Magirr D. (2019), \emph{The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of Statistical Software}, 88(4), 1-25. Link: \doi{10.18637/jss.v088.i04}
 
-Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection. Biometrika, 99(2), 494-501.\cr
+Magirr D., Jaki T. and Whitehead J. (2012), \emph{A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection}, \bold{Biometrika}, 99(2), 494-501. Link: \doi{10.1093/biomet/ass002}
 
-Magirr D, Stallard N, Jaki T (2014) Flexible sequential designs for multi-arm clinical trials. Statistics in Medicine, 33(19), 3269-3279.
+Magirr D., Stallard N. and Jaki T. (2014), \emph{Flexible sequential designs for multi-arm clinical trials}, \bold{Statistics in Medicine}, 33(19), 3269-3279. Link: \doi{10.1002/sim.6183}
 
-Stallard N, Todd S (2003) Sequential designs for phase III clinical trials incorporating treatment selection. Statistics in Medicine, 22(5), 689-703.\cr
+Stallard N. and Todd S. (2003), \emph{Sequential designs for phase III clinical trials incorporating treatment selection}, \bold{Statistics in Medicine}, 22(5), 689-703.\cr
 }
 
 \author{Dominic Magirr}

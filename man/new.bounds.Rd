@@ -12,21 +12,23 @@ The function determines updated boundaries of a multi-arm multi-stage study base
 \usage{
 new.bounds(K=3, J=2, alpha=0.05, nMat=matrix(c(10, 20), nrow=2, ncol=4), 
            u=NULL, l=NULL, ushape="obf", lshape="fixed", ufix=NULL,
-           lfix=0, N=20)
+           lfix=0, N=20, parallel=TRUE, print=TRUE)
 }
 
 \arguments{
-  \item{K}{Number of experimental treatments (default=3).}
-  \item{J}{Number of stages (default=2).}
-  \item{alpha}{One-sided familywise error rate (default=0.05).}
+  \item{K}{Number of experimental treatments (default=\code{3}).}
+  \item{J}{Number of stages (default=\code{2}).}
+  \item{alpha}{One-sided familywise error rate (default=\code{0.05}).}
   \item{nMat}{Jx(K+1) dimensional matrix of observed/expected sample sizes. Rows correspond to stages and columns to arms. First column is control (default: 2x4 matrix with 10 subjects per stage and arm).}
-  \item{u}{Vector of previously used upper boundaries (default=NULL).}
-  \item{l}{Vector of previously used upper boundaries (default=NULL).}
+  \item{u}{Vector of previously used upper boundaries (default=\code{NULL}).}
+  \item{l}{Vector of previously used upper boundaries (default=\code{NULL}).}
   \item{ushape}{Shape of upper boundary. Either a function specifying the shape or one of \code{"pocock"}, \code{"obf"} (the default), \code{"triangular"} and \code{"fixed"}. See details.}
   \item{lshape}{Shape of lower boundary. Either a function specifying the shape or one of \code{"pocock"}, \code{"obf"}, \code{"triangular"} and \code{"fixed"} (the default). See details.}
-  \item{ufix}{Fixed upper boundary (default=NULL). Only used if \code{shape="fixed"}.}
-  \item{lfix}{Fixed lower boundary (default=0). Only used if \code{shape="fixed"}.}
+  \item{ufix}{Fixed upper boundary (default=\code{NULL}). Only used if \code{shape="fixed"}.}
+  \item{lfix}{Fixed lower boundary (default=\code{0}). Only used if \code{shape="fixed"}.}
   \item{N}{Number of quadrature points per dimension in the outer integral (default=20).}
+  \item{parallel}{if \code{TRUE} (default), allows parallelisation of the computation via a user-defined strategy specified by means of the function \code{\link[future:plan]{future::plan()}}. If not set differently, the default strategy is \code{sequential}, which corresponds to a computation without parallelisation.}
+  \item{print}{if \code{TRUE} (default), indicate at which stage the computation is.}
 }
 
 \details{
@@ -49,23 +51,25 @@ An object of the class MAMS containing the following components: \cr
 
 }
 
-\references{
-Jaki T, Pallmann P and Magirr D (2019). "The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials."" Journal of Statistical Software, 88(4), pp. 1-25. doi: 10.18637/jss.v088.i04
-(URL: http://doi.org/10.18637/jss.v088.i04)
-
-Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett Test for multi-arm multi-stage clinical studies with treatment selection. Biometrika, 99(2), 494-501.\cr
-
-Magirr D, Stallard N, Jaki T. (2014) Flexible sequential designs for multi-arm clinical
-trials. Statistics in Medicine. 33(19):3269-3279.
-
-Pocock SJ (1977) Group sequential methods in the design and analysis of clinical trials. Biometrika, 64(2), 191-199.\cr
-
-O'Brien PC, Fleming TR (1979) A multiple testing procedure for clinical trials. Biometrics, 35(3), 549-556.\cr 
-
-Whitehead J (1997) The Design and Analysis of Sequential Clinical Trials. Wiley: Chichester, UK.\cr
+\seealso{
+  \code{\link{print.MAMS}}, \code{\link{summary.MAMS}}, \code{\link{plot.MAMS}}, \code{\link{mams}}, \code{\link{MAMS}}.
 }
 
-\author{Thomas Jaki and Dominic Magirr}
+\references{
+Jaki T., Pallmann P. and Magirr D. (2019), \emph{The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of Statistical Software}, 88(4), 1-25. Link: \doi{10.18637/jss.v088.i04}
+
+Magirr D., Jaki T. and Whitehead J. (2012), \emph{A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection}, \bold{Biometrika}, 99(2), 494-501. Link: \doi{10.1093/biomet/ass002}
+
+Magirr D., Stallard N. and Jaki T. (2014), \emph{Flexible sequential designs for multi-arm clinical trials}, \bold{Statistics in Medicine}, 33(19), 3269-3279. Link: \doi{10.1002/sim.6183}
+
+Pocock S.J. (1977), \emph{Group sequential methods in the design and analysis of clinical trials}, \bold{Biometrika}, 64(2), 191-199.\cr
+
+O'Brien P.C., Fleming T.R. (1979), \emph{A multiple testing procedure for clinical trials}, \bold{Biometrics}, 35(3), 549-556.\cr 
+
+Whitehead J. (1997), \emph{The Design and Analysis of Sequential Clinical Trials}, \bold{Wiley}: Chichester, UK.\cr 
+}
+
+\author{Thomas Jaki, Dominic Magirr and Dominique-Laurent Couturier}
 
 \examples{\donttest{
 # Note that some of these examples may take a few minutes to run
@@ -87,6 +91,14 @@ new.bounds(K=4, J=2, alpha=0.05, nMat=matrix(c(10, 20), nrow=2, ncol=5), u=NULL,
 new.bounds(K=4, J=2, alpha=0.05, 
            nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28), nrow=2, ncol=5), 
            u=3.068, l=0, ushape="obf", lshape="fixed", lfix=0)
+           
+# same using parallelisation via separate R sessions running in the background
+future::plan(multisession)
+new.bounds(K=4, J=2, alpha=0.05, 
+           nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28), nrow=2, ncol=5), 
+           u=3.068, l=0, ushape="obf", lshape="fixed", lfix=0)
+future::plan("default")
+           
 }}
 
 \keyword{design}

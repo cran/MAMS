@@ -10,20 +10,21 @@ The function simulates multi-arm multi-stage designs and estimates power and exp
 }
 
 \usage{
-mams.sim(nsim=1000, nMat=matrix(c(44, 88), nrow=2, ncol=5),
+mams.sim(nsim=10000, nMat=matrix(c(44, 88), nrow=2, ncol=5),
          u=c(3.068, 2.169), l=c(0.000, 2.169),
-         pv=rep(0.5, 4), deltav=NULL, sd=NULL, ptest=1)
+         pv=rep(0.5, 4), deltav=NULL, sd=NULL, ptest=1, parallel=TRUE)
 }
 
 \arguments{
-  \item{nsim}{Number of simulations (default=1000).}
+  \item{nsim}{Number of simulations (default=\code{10000}).}
   \item{nMat}{Jx(K+1) dimensional matrix of observed/expected sample sizes. Rows correspond to stages and columns to arms. First column is control (default: 2x5 matrix with 44 subjects per stage and arm).}
-  \item{u}{Vector of previously used upper boundaries (default=NULL).}
-  \item{l}{Vector of previously used upper boundaries (default=NULL).}
-  \item{pv}{Vector of size K of true treatment effects on the probability scale. See Details (default=rep(0.5, 4)).}
-  \item{deltav}{Vector of size K of true treatment effects on the traditional scale. See Details (default=NULL).}
-  \item{sd}{Standard deviation. See Details (default=NULL).}
+  \item{u}{Vector of previously used upper boundaries (default=\code{NULL}).}
+  \item{l}{Vector of previously used upper boundaries (default=\code{NULL}).}
+  \item{pv}{Vector of size K of true treatment effects on the probability scale. See Details (default=\code{rep(0.5, 4)}).}
+  \item{deltav}{Vector of size K of true treatment effects on the traditional scale. See Details (default=\code{NULL}).}
+  \item{sd}{Standard deviation. See Details (default=\code{NULL}).}
   \item{ptest}{Vector of treatment numbers for determining power. For example, c(1, 2) will count rejections of one or both hypotheses for testing treatments 1 and 2 against control.}
+  \item{parallel}{if \code{TRUE} (default), allows parallelisation of the computation via a user-defined strategy specified by means of the function \code{\link[future:plan]{future::plan()}}. If not set differently, the default strategy is \code{sequential}, which corresponds to a computation without parallelisation.}
 }
 
 \details{
@@ -35,10 +36,10 @@ The function returns the probability of rejecting any hypothesis (\code{typeI}),
 \value{
 An object of the class MAMS.sim containing the following components: \cr 
 
-  res$typeI <- mean(unlist(reps["rej",]))
-  res$power <- mean(unlist(reps["pow",]))
-  res$prop.rej <- rej/nsim
-  res$exss <- mean(unlist(reps["ess",]))
+  \preformatted{res$typeI <- mean(unlist(reps["rej",]))}
+  \preformatted{res$power <- mean(unlist(reps["pow",]))}
+  \preformatted{res$prop.rej <- rej/nsim}
+  \preformatted{res$exss <- mean(unlist(reps["ess",]))}
 
   \item{l}{Lower boundary.} 
   \item{u}{Upper boundary.}
@@ -56,14 +57,17 @@ An object of the class MAMS.sim containing the following components: \cr
 
 }
 
-\references{
-Jaki T, Pallmann P and Magirr D (2019). "The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials." Journal of Statistical Software, 88(4), pp. 1-25. doi: 10.18637/jss.v088.i04
-(URL: http://doi.org/10.18637/jss.v088.i04)
-
-Magirr D, Jaki T, Whitehead J (2012) A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection. Biometrika, 99(2), 494-501.
+\seealso{
+  \code{\link{print.MAMS.sim}}, \code{\link{summary.MAMS.sim}}, \code{\link{mams}}, \code{\link{MAMS}}.
 }
 
-\author{Thomas Jaki and Dominic Magirr}
+\references{
+Jaki T., Pallmann P. and Magirr D. (2019), \emph{The R Package MAMS for Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of Statistical Software}, 88(4), 1-25. Link: \doi{10.18637/jss.v088.i04}
+
+Magirr D., Jaki T. and Whitehead J. (2012), \emph{A generalized Dunnett test for multi-arm multi-stage clinical studies with treatment selection}, \bold{Biometrika}, 99(2), 494-501. Link: \doi{10.1093/biomet/ass002}
+}
+
+\author{Thomas Jaki, Dominic Magirr and Dominique-Laurent Couturier}
 
 \examples{\donttest{
 # Note that some of these examples may take a few minutes to run
@@ -88,6 +92,34 @@ mams.sim(nsim=10000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
 # when all treatments doing similarly well
 mams.sim(nsim=10000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
          l=c(0.000, 2.169), pv=c(0.63, 0.62, 0.60, 0.61), ptest=4)
+
+## 
+## example considering different parallelisation strategies 
+## 
+
+# parallel = FALSE (future framework not used)
+set.seed(1)
+system.time(
+print(mams.sim(nsim=25000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
+         l=c(0.000, 2.169), pv=c(0.65, 0.55, 0.55, 0.55), ptest=1:2, parallel=FALSE))
+)
+# parallel = TRUE (default) with default strategy (sequential computation)
+plan(sequential)
+set.seed(1)
+system.time(
+print(mams.sim(nsim=25000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
+         l=c(0.000, 2.169), pv=c(0.65, 0.55, 0.55, 0.55), ptest=1:2))
+)
+# parallel = TRUE (default) with multisession strategy (parallel computation)
+plan(multisession)
+set.seed(1)
+system.time(
+print(mams.sim(nsim=25000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
+         l=c(0.000, 2.169), pv=c(0.65, 0.55, 0.55, 0.55), ptest=1:2))
+)
+plan("default")       
+
 }}
+
 
 \keyword{design}

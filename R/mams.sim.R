@@ -2,8 +2,8 @@
 ## 'mams.sim' evaluates 'generalsim' x times and computes average
 ######################################################################
 
-mams.sim <- function(nsim=1000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
-                     l=c(0.000, 2.169), pv=rep(0.5, 4), deltav=NULL, sd=NULL, ptest=1) { 
+mams.sim <- function(nsim=10000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.068, 2.169),
+                     l=c(0.000, 2.169), pv=rep(0.5, 4), deltav=NULL, sd=NULL, ptest=1, parallel=TRUE) { 
   
   if(is.numeric(pv) & is.numeric(deltav) & is.numeric(sd)){
     stop("Specify the effect sizes either via pv or via deltav and sd, and set the other parameters to NULL.")
@@ -104,8 +104,13 @@ mams.sim <- function(nsim=1000, nMat=matrix(c(44, 88), nrow=2, ncol=5), u=c(3.06
     sig <- sd
   }
   
-  reps<-sapply(rep(n,nsim),sim,l,u,R,r0,deltas,sig)
-
+  if(parallel){
+      reps<-future.apply::future_sapply(rep(n,nsim),sim,l,u,R,r0,deltas,sig,
+        future.seed=TRUE, future.packages="MAMS")
+  }else{
+      reps<-future_sapply(rep(n,nsim),sim,l,u,R,r0,deltas,sig,
+        future.seed=TRUE)
+  }
   ### power to reject any of the hypothesis corresponding to the treatments in ptest
   rej<-0
   for(i in 1:nsim){
