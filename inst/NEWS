@@ -18,11 +18,15 @@ Question or suggestions about the package can be sent to
    thomas.jaki@pm.me
 
 --------------------CHANGE LOG--------------------------------------------
+Version 2.0.1
+
+  o Bug fix when K=1 in mams.sim
+  o Add src/init.c file
+   
+--------------------CHANGE LOG--------------------------------------------
 Version 2.0.0
 
-  o Parallelisation framework included in functions mams, 
-    new.bounds and mams.sim
-  	• Default set to parallel=TRUE
+  o Parallelisation framework included for several functions  
   o Recoding of parts of the functions in C
   o Inclusion of new package help file
   o Update of authors
