@@ -232,18 +232,17 @@ SEXP C_prodsum1(SEXP x2, SEXP l2, SEXP u2, SEXP r2, SEXP r02, SEXP r0diff2,
 
 
 /* C_prodsum2 based on the function prodsum2 of */ 
-/* MAMS::mams version 1.4.2 [DLC 202201-007]    */
+/* MAMS::mams version 2.0.2 [DLC 202201-007]    */
 
-SEXP C_prodsum2(SEXP x2, SEXP r2, SEXP r02, SEXP K2, SEXP l2, SEXP u2, 
+SEXP C_prodsum2(SEXP x2, SEXP r2, SEXP r02, SEXP K2, SEXP u2, 
                 SEXP delta2, SEXP delta02, SEXP n2, SEXP sig2){
                
     /* inputs */
     int nprotect=0;
-    double *x, *r, *r0, *l, *u, *delta, *delta0, *n, *sig, *K;
+    double *x, *r, *r0, *u, *delta, *delta0, *n, *sig, *K;
     x = REAL(x2); 
     r = REAL(r2); 
     r0 = REAL(r02); 
-    l = REAL(l2); 
     u = REAL(u2); 
     delta = REAL(delta2); 
     delta0 = REAL(delta02); 
@@ -273,8 +272,8 @@ SEXP C_prodsum2(SEXP x2, SEXP r2, SEXP r02, SEXP K2, SEXP l2, SEXP u2,
 
 
 
-/* C_prodsum3 based on the function prodsum of  */ 
-/* MAMS::mams version 1.4.2 [DLC 202201-007]    */
+/* C_prodsum3 based on the function prodsum of   */ 
+/* MAMS::mams version 2.0.2 [DLC/NAM 202403-010] */
 
 SEXP C_prodsum3(SEXP x2, SEXP l2, SEXP u2, SEXP r2, SEXP r02, SEXP r0diff2,
                 SEXP Jfull2, SEXP K2, SEXP delta2, SEXP delta02,
@@ -381,6 +380,9 @@ SEXP C_prodsum3(SEXP x2, SEXP l2, SEXP u2, SEXP r2, SEXP r02, SEXP r0diff2,
          sqrt(r0diff[Jcut[0]]);
     ans[0] *= pnorm(p4, 0, 1, 1, 0);  
     
+    if (isnan(ans[0]) || isinf(ans[0])) {
+        ans[0] = 0.0;
+    }
     /* out */
     PutRNGstate();
         

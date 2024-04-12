@@ -1,6 +1,7 @@
 useDynLib(MAMS, .registration = TRUE)
 
 import(utils)
+import(knitr)
 import(mvtnorm)
 import(future)
 import(future.apply)

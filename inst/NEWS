@@ -18,6 +18,13 @@ Question or suggestions about the package can be sent to
    thomas.jaki@pm.me
 
 --------------------CHANGE LOG--------------------------------------------
+Version 2.0.2
+
+  o NA related C code bug fix related to gcc compilers
+  o Add documentation for better clarity and user guidance
+
+
+--------------------CHANGE LOG--------------------------------------------
 Version 2.0.1
 
   o Bug fix when K=1 in mams.sim
