@@ -5,6 +5,7 @@
 #include <stdlib.h> 
 #include <R_ext/Rdynload.h>
 #include <mvtnormAPI.h>
+#include <R_ext/Memory.h>
 
 
 
@@ -40,16 +41,16 @@ double C_MAMS_pnorm(double *lower, double *upper,
     /* multivariate */    
     /*              */        
     
-    nu = Calloc(1, int);
-    myerror = Calloc(1, double);
-    prob = Calloc(1, double);
+    nu = R_Calloc(1, int);
+    myerror = R_Calloc(1, double);
+    prob = R_Calloc(1, double);
     nu[0] = 0;
-    inform = Calloc(1, int);
-    delta = Calloc(Jcut[0], double);        
+    inform = R_Calloc(1, int);
+    delta = R_Calloc(Jcut[0], double);        
     if (Jcut[0] == 2)  
-         corr = Calloc(1, double);
+         corr = R_Calloc(1, double);
     else 
-         corr = Calloc(Jcut[0] + ((Jcut[0] - 2) * (Jcut[0] - 1))/2, double);
+         corr = R_Calloc(Jcut[0] + ((Jcut[0] - 2) * (Jcut[0] - 1))/2, double);
     
 
     /* mvtdst assumes the unique elements of the triangular */
@@ -117,8 +118,8 @@ double C_MAMS_pnorm(double *lower, double *upper,
     
     /* out */
     ans = prob[0];
-    Free(corr); Free(myerror); Free(prob);
-    Free(nu); Free(inform); 
+    R_Free(corr); R_Free(myerror); R_Free(prob);
+    R_Free(nu); R_Free(inform); 
     return(ans);  
 }
 
