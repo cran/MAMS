@@ -2,49 +2,81 @@
 ################################ Check input ###################################
 ################################################################################
 mams.check.sep <- function(obj) {
-  if (obj$K %% 1 > 0 | obj$J %% 1 > 0) {
+
+  m <- match(c(
+    "K", "J", "alpha", "power", "r", "r0", "p", "p0",
+    "delta", "delta0", "sd", "ushape", "lshape", "ufix", "lfix",
+    "nstart", "nstop", "sample.size", "Q", "type", "method",
+    "parallel", "print", "nsim", "H0", "obj", "par", "sim"
+  ), names(obj), 0)
+  mc <- obj[c(m)]
+
+  if (mc[["K"]] %% 1 > 0 | mc[["J"]] %% 1 > 0) {
     stop("K and J need to be integers.")
   }
-  if (obj$K < 1 | obj$J < 1) {
+  if (mc[["K"]] < 1 | mc[["J"]] < 1) {
     stop("The number of stages and treatments must be at least 1.")
   }
-  if (obj$Q <= 3) {
+  if (mc[["Q"]] <= 3) {
     stop("Number of points for integration by quadrature to small or negative.")
   }
-  if (obj$Q > 3 & obj$Q <= 10) {
+  if (mc[["Q"]] > 3 & mc[["Q"]] <= 10) {
     warning(
       "Number of points for integration by quadrature is small which may",
       " result in inaccurate solutions."
     )
   }
-  if (obj$alpha < 0 | obj$alpha > 1 | obj$power < 0 | obj$power > 1) {
+  if (mc[["alpha"]] < 0 | mc[["alpha"]] > 1 | mc[["alpha"]] < 0 | 
+      mc[["alpha"]] > 1) {
     stop("Error rate or power not between 0 and 1.")
   }
-  if (length(obj$r) != length(obj$r0)) {
+  if (length(mc[["r"]]) != length(mc[["r0"]])) {
     stop(
       "Different length of allocation ratios on control and experimental ",
       "treatments."
     )
   }
-  if (length(obj$r) != obj$J) {
+  if (length(mc[["r"]]) != mc[["J"]]) {
     stop("Length of allocation ratios does not match number of stages.")
   }
+  if (length(mc[["r0"]]) != mc[["J"]]) {
+    stop("`r0` needs to be defined as a vector of length `J`.")
+  }
+  if (any(diff(mc[["r0"]]) <= 0)) {
+    stop("`r0` must be a monotonically increasing vector.")
+  }
+  if (length(mc[["r"]]) != mc[["J"]]) {
+    stop("`r` needs to be defined as a vector of length `J`.")
+  }
+  if (any(diff(mc[["r"]]) <= 0)) {
+    stop("`r` must be a monotonically increasing vector.")
+  }
+  if (mc[["r0"]][1] < 1) {
+    stop("`r0[1]` must be >= 1.")
+  }
+  if (any(mc[["r"]] <= 0)) {
+    stop("`r` values must be >= 1.")
+  }
+  if (mc[["r0"]][1] %% 1 != 0) {
+    stop("First element of `r0` must be integers.")
+  }
 
-  if (is.numeric(obj$p) & is.numeric(obj[["delta"]]) & is.numeric(obj$sd)) {
+  if (is.numeric(mc[["p"]]) & is.numeric(mc[["delta"]]) & 
+      is.numeric(mc[["sd"]])) {
     stop(
       "Specify the effect sizes either via p or via (delta, sd) and set the",
       " other parameter(s) to NULL."
     )
   }
-  if (is.numeric(obj$p)) {
-    if (obj$p < 0 | obj$p > 1) {
+  if (is.numeric(mc[["p"]])) {
+    if (mc[["p"]] < 0 | mc[["p"]]> 1) {
       stop("Treatment effect parameter not within 0 and 1.")
     }
   } else {
-    if (is.numeric(obj[["delta"]]) ||
-    (!is.null(obj$par) && !is.null(obj$par[["delta"]]) 
+    if (is.numeric(mc[["delta"]]) ||
+    (!is.null(mc[["par"]]) && !is.null(obj$par[["delta"]]) 
     && is.numeric(obj$par[["delta"]])) & 
-    is.numeric(obj$sd)) {
+    is.numeric(mc[["sd"]])) {
       if (obj$sd <= 0) {
         stop("Standard deviation must be positive.")
       }
@@ -55,37 +87,37 @@ mams.check.sep <- function(obj) {
       )
     }
   }
-  if (is.function(obj$ushape) & is.function(obj$lshape)) {
+  if (is.function(mc[["ushape"]]) & is.function(mc[["lshape"]])) {
     warning(
       "You have specified your own functions for both the lower and ",
       "upper boundary. Please check carefully whether the resulting ",
       "boundaries are sensible."
     )
   }
-  if (!is.function(obj$ushape)) {
-    if (!obj$ushape %in% c("pocock", "obf", "triangular", "fixed")) {
+  if (!is.function(mc[["ushape"]])) {
+    if (!mc[["ushape"]] %in% c("pocock", "obf", "triangular", "fixed")) {
       stop("Upper boundary does not match the available options.")
     }
-    if (obj$ushape == "fixed" & is.null(obj$ufix)) {
+    if (mc[["ushape"]] == "fixed" & is.null(mc[["ufix"]])) {
       stop("ufix required when using a fixed upper boundary shape.")
     }
   } else {
-      ushape  <- obj$ushape
-    b <- ushape(obj$J)
+      ushape  <- mc[["ushape"]]
+    b <- ushape(mc[["J"]])
     if (!all(sort(b, decreasing = TRUE) == b)) {
       stop("Upper boundary shape is increasing.")
     }
   }
-  if (!is.function(obj$lshape)) {
-    if (!obj$lshape %in% c("pocock", "obf", "triangular", "fixed")) {
+  if (!is.function(mc[["lshape"]])) {
+    if (!mc[["lshape"]] %in% c("pocock", "obf", "triangular", "fixed")) {
       stop("Lower boundary does not match the available options.")
     }
-    if (obj$lshape == "fixed" & is.null(obj$lfix)) {
+    if (mc[["lshape"]] == "fixed" & is.null(mc[["lfix"]])) {
       stop("lfix required when using a fixed lower boundary shape.")
     }
   } else {
-    lshape  <- obj$lshape
-    b <- lshape(obj$J)
+    lshape  <- mc[["lshape"]]
+    b <- lshape(mc[["J"]])
     if (!all(sort(b, decreasing = FALSE) == b)) {
       stop("Lower boundary shape is decreasing.")
     }
@@ -264,9 +296,9 @@ mams.fit.sep <- function(obj) {
 
   ##### Ensure equivalent allocation ratios yield same sample size #############
 
-  h <- min(c(r, r0))
-  r <- r / h
-  r0 <- r0 / h
+  # h <- min(c(r, r0))
+  # r <- r / h
+  # r0 <- r0 / h
 
   ##### Create the variance covariance matrix from allocation proportions ######
 
@@ -352,6 +384,12 @@ mams.fit.sep <- function(obj) {
     n <- ((quan + stats::qnorm(power)) / ifelse(is.null(obj$p), delta,
                                 (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r)
   } else {
+    if (r[1] > r0[1]) {
+      r <- r / r0[1]
+      r0 <- r0 / r0[1]
+      message("Allocation ratio for control arm at first stage greater than for 
+      treatment arm(s), using normalisation by r0[1] \n")
+    }
     n <- nstart
     pow <- 0
     if (sample.size) {
@@ -368,6 +406,8 @@ mams.fit.sep <- function(obj) {
         n <- n + 1
         pow <- (typeII(n, 1 - power, l, u, r, r0, J, delta, sig, Sigma) < 0)
       }
+
+      n <- n * r0[1]
       if (n - 1 == nstop) {
         warning("The sample size was limited by nstop.")
       }
@@ -391,7 +431,20 @@ mams.fit.sep <- function(obj) {
   res$u <- u
   res$n <- n
   ## allocation ratios
-  res$rMat <- rbind(r0, matrix(r, ncol = obj$J, nrow = obj$K, byrow = TRUE))
+
+
+h <- min(obj$r0) # check that here we are not using r0[1]
+r_norm <- obj$r / h
+r0_norm <- obj$r0 / h
+res$rMat <- rbind(r0_norm, matrix(r_norm, ncol = obj$J, nrow = obj$K, 
+                                  byrow = TRUE))
+  
+dimnames(res$rMat) <- list(
+  c("Control", paste0("T", 1:obj$K)),
+  paste("Stage", 1:obj$J)
+)
+
+  # res$rMat <- rbind(r0, matrix(r, ncol = obj$J, nrow = obj$K, byrow = TRUE))
   ## maximum total sample sizeres$Q <- K*r[J]*n+r0[J]*n ## maximum total
   ## sample size
   res$N <- sum(ceiling(res$rMat[, obj$J] * res$n))
@@ -819,7 +872,8 @@ H1$main$efficacy <- as.data.frame(rbind(
     ))
     dimnames(H1$main$efficacy) <- list(
       c(
-      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best", "All rejected"
+      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best", 
+      "All rejected"
       ),
       paste("Stage", 1:J)
     )
@@ -901,7 +955,8 @@ H1$main$efficacy <- as.data.frame(rbind(
     ))
     dimnames(H0$main$efficacy) <- list(
       c(
-      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best", "All rejected"
+      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best",
+      "All rejected"
       ),
       paste("Stage", 1:J)
     )

@@ -159,15 +159,15 @@ plan("default")
 Jaki T., Pallmann P., and Magirr D. (2019), \emph{The R Package MAMS for
 Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of
 Statistical Software}, 88(4), 1-25. Link:
-\doi{https://doi.org/10.18637/jss.v088.i04}
+\doi{10.18637/jss.v088.i04}
 
 Magirr D., Jaki T., and Whitehead J. (2012), \emph{A generalized Dunnett test
 for multi-arm multi-stage clinical studies with treatment selection},
 \bold{Biometrika}, 99(2), 494-501. Link:
-\doi{https://doi.org/10.1093/biomet/ass002}
+\doi{10.1093/biomet/ass002}
 }
 \seealso{
-\link{mams}.
+\link{mams}, \link[=mams]{MAMS}.
 }
 \author{
 Thomas Jaki, Dominic Magirr and Dominique-Laurent Couturier

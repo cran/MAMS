@@ -4,13 +4,24 @@
 
 mams.check.dtl <- function(obj) {
 
-if (obj[["J"]] <= 1) {
+  m <- match(c(
+    "K", "J", "alpha", "power", "r", "r0", "p", "p0",
+    "delta", "delta0", "sd", "ushape", "lshape", "ufix", "lfix",
+    "nstart", "nstop", "sample.size", "Q", "type", "method",
+    "parallel", "print", "nsim", "H0", "obj", "par", "sim"
+  ), names(obj), 0)
+
+  mc <- obj[c(m)]
+
+if (mc[["J"]] <= 1) {
 stop("For method = 'dtl', the number of stages 'J' should be greater than 1.")
 }
-if (length(obj$K) != obj$J) {
+if (length(mc[["K"]]) != mc[["J"]]) {
 stop("`K` need to be defined as vector length of `J`")
 }
-  obj$Kv <- obj$K
+
+obj$Kv <- mc[["K"]]
+
     if (any(obj$Kv%%1 != 0, !is.numeric(obj$Kv), obj$Kv < 1,
           is.infinite(obj$Kv),
           length(obj$Kv) < 2,
@@ -18,36 +29,37 @@ stop("`K` need to be defined as vector length of `J`")
           obj$Kv[length(obj$Kv)] != 1)) {
     stop("K must be a monotonically decreasing vector, of length at least 2, ",
           "containing only integers, with final element equal to 1.")
-  } else {
-    J <- length(obj$Kv)
   }
-  if (obj$alpha < 0 | obj$alpha > 1 | obj$power < 0 | obj$power > 1) {
+
+  if (mc[["alpha"]] < 0 | mc[["alpha"]] > 1 | mc[["power"]] < 0 | 
+  mc[["power"]] > 1) {
     stop("Error rate or power not between 0 and 1.")
   }
-  if (length(obj$r) != length(obj$r0)) {
+  if (length(mc[["r"]]) != length(mc[["r0"]])) {
     stop("Different length of allocation ratios on control and experimental ",
           "treatments.")
   }
-  if (length(obj$r) != obj$J) {
+  if (length(mc[["r"]]) != mc[["J"]]) {
     stop("Length of allocation ratios does not match number of stages.")
   }
 
-  if (is.numeric(obj$p) & is.numeric(obj$p0) & is.numeric(obj[["delta"]]) &
-      is.numeric(obj[["delta0"]]) &
-      is.numeric(obj$sd)) {
+  if (is.numeric(mc[["p"]]) & is.numeric(mc[["p0"]]) & 
+      is.numeric(mc[["delta"]]) &
+      is.numeric(mc[["delta0"]]) &
+      is.numeric(mc[["sd"]])) {
     stop("Specify the effect sizes either via p or via (delta, sd) and set the",
           " other parameter(s) to NULL.")
   }
-  if (is.numeric(obj$p) & is.numeric(obj$p0)) {
-    if (obj$p < 0 | obj$p > 1) {
+  if (is.numeric(mc[["p"]]) & is.numeric(mc[["p0"]])) {
+    if (mc[["p"]] < 0 | mc[["p"]] > 1) {
       stop("Treatment effect parameter not within 0 and 1.")
     }
   } else {
     if (is.numeric(obj[["delta"]]) ||
     (!is.null(obj$par) && !is.null(obj$par[["delta"]]) 
     && is.numeric(obj$par[["delta"]])) & 
-    is.numeric(obj$sd)) {
-      if (obj$sd <= 0) {
+    is.numeric(mc[["sd"]])) {
+      if (mc[["sd"]] <= 0) {
         stop("Standard deviation must be positive.")
       }
     } else {
@@ -55,6 +67,28 @@ stop("`K` need to be defined as vector length of `J`")
             "the other parameter(s) to NULL.")
     }
   }
+  if (length(mc[["r0"]]) != mc[["J"]]) {
+    stop("`r0` needs to be defined as a vector of length `J`.")
+  }
+  if (any(diff(mc[["r0"]]) <= 0)) {
+    stop("`r0` must be a monotonically increasing vector.")
+  }
+  if (length(mc[["r"]]) != mc[["J"]]) {
+    stop("`r` needs to be defined as a vector of length `J`.")
+  }
+  if (any(diff(mc[["r"]]) <= 0)) {
+    stop("`r` must be a monotonically increasing vector.")
+  }
+    if (mc[["r0"]][1] < 1) {
+    stop("`r0[1]` must be >= 1.")
+  }
+  if (any(mc[["r"]] <= 0)) {
+    stop("`r` values must be >= 1.")
+  }
+  if (mc[["r0"]][1] %% 1 != 0) {
+    stop("First element of `r0` must be integers.")
+  }
+
   return(obj)
 }
 
@@ -116,12 +150,6 @@ mams.fit.dtl <- function(obj) {
     p0 <- pnorm(delta0 / sqrt(2 * obj$sd^2))
     sig <- obj$sd
   }
-
-  ##### Ensure equivalent allocation ratios yield same sample size #############
-
-  obj$h  <- min(c(obj$r, obj$r0))
-  obj$r  <- obj$r/obj$h
-  obj$r0 <- obj$r0/obj$h
 
   ##### Create no-drop covariance matrix #######################################
 
@@ -263,8 +291,15 @@ mams.fit.dtl <- function(obj) {
                                 stats::qnorm(obj$power)*
                   sqrt(sig[1]^2 + sig[1]^2/obj$r[1]))/delta)^2)
     }
+
+      if (obj$r[1] > obj$r0[1]) {
+      obj$r <- obj$r / obj$r0[1]
+      obj$r0 <- obj$r0 / obj$r0[1]
+      message("Allocation ratio for control arm at first stage greater than for 
+      treatment arm(s), using normalisation by r0[1] \n")
+    }
     # Loop until a value of n providing the desired power is found
-    n             <- obj$nstart
+        n             <- obj$nstart
     power_check   <- FALSE
     while (all(!power_check, n <= obj$nstop)) {
       power_check <- (dtl_find_n(n, obj$Kv, obj$power, obj$J, outcomes, 
@@ -272,6 +307,8 @@ mams.fit.dtl <- function(obj) {
       n           <- n + 1L
     }
     n             <- n - 1L
+    n <- n * obj$r0[1]
+
     if (n == obj$nstop) {
       warning("The sample size was limited by nstop.")
     }
@@ -282,6 +319,8 @@ mams.fit.dtl <- function(obj) {
   
   ##### Output #################################################################
   Kv_diff     <- c(obj$Kv[1:(obj$J - 1)] - obj$Kv[2:obj$J], obj$Kv[obj$J])
+  
+
   res         <- list(K           = obj$K,
                       l           = c(rep(NA, obj$J - 1), e), # May want to
                       u           = c(rep(NA, obj$J - 1), e), # change this
@@ -289,10 +328,6 @@ mams.fit.dtl <- function(obj) {
                       r           = obj$r,
                       r0          = obj$r0,
                       Q           = obj$Q,
-                      rMat        = rbind(obj$r0, matrix(obj$r, obj$Kv[1],
-                                                          obj$J, byrow = TRUE)),
-                      N           = ceiling(n*obj$r0[obj$J]) + sum(ceiling(n*
-                                                                obj$r*Kv_diff)),
                       Kv          = obj$Kv,
                       J           = obj$J,
                       p           = obj$p,
@@ -311,6 +346,18 @@ mams.fit.dtl <- function(obj) {
                       print       = obj$print,
                       nstart      = obj$nstart,
                       H0          = obj$H0)
+
+  h <- min(obj$r0) # check that here we are not using r0[1]
+  r_norm <- obj$r / h
+  r0_norm <- obj$r0 / h
+  res$rMat  <- rbind(r0_norm, matrix(r_norm, obj$Kv[1], obj$J, byrow = TRUE))
+
+  res$N           = ceiling(n*r0_norm[obj$J]) + sum(ceiling(n*r_norm*Kv_diff))
+  dimnames(res$rMat) <- list(
+  c("Control", paste0("T", 1:obj$K[1])),
+  paste("Stage", 1:obj$J)
+)
+
 
   if (obj$sample.size) {
     res$power <- obj$power
@@ -679,7 +726,6 @@ nMat  <- if (length(par$nMat) == 0) {
     R      <- t(as.matrix(nMat[, -1]/nMat[1, 1]))
   }
   n        <- nMat[1, 1]
-
   if (is.numeric(pv)) {
     deltas <- sqrt(2)*stats::qnorm(pv)
     sig    <- 1
@@ -708,8 +754,9 @@ nMat  <- if (length(par$nMat) == 0) {
     # main results
     H1$main = list()
     # sample size
-    tmp <- lapply(H1$full["remaining",], function(x) x*n)
-    tmp <- sapply(tmp,function(x) apply(x,2,sum))
+    tmp <- lapply(H1$full["remaining",], function(x) x*n*cbind(r0, R))
+    # tmp <- sapply(tmp,function(x) apply(x,2,sum))
+    tmp <- sapply(tmp, function(x) apply(x, 2, max)) 
     H1$main$ess = data.frame(ess  = apply(tmp,1,mean),
                             sd   = sqrt(apply(tmp,1,var)),
                             low  = apply(tmp,1,quantile,prob=0.025),
@@ -842,15 +889,17 @@ K  <- Kv[1]
   } else {
     H0<-NULL
   }
-  
   ##### Output #################################################################
+
+  Kv_diff <- c(Kv[1:(J - 1)] - Kv[2:J], Kv[J])
+  res$N <- ceiling(n * r0[obj$J]) + sum(ceiling((n * R)[,1] * Kv_diff))
+
   res$l <- l
   res$u <- u
   res$n <- n
   res$rMat <- rbind(r0, t(R))
   res$K <- obj$K
   res$J <- dim(R)[1]
-  res$N <- sum(res$rMat[, res$J] * res$n)
   res$alpha <- ifelse(is.null(obj), 0.05, obj$alpha)
   res$alpha.star <- NULL
   res$type <- "normal"
@@ -937,6 +986,7 @@ mams.print.dtl  <- function(x,
     res[2,1] <- round(x$sim[[hyp]]$main$efficacy["T1  is best",x$J],digits)
     res[3,1] <- round(x$sim[[hyp]]$main$efficacy[ptest,x$J],digits)
     res[4,1] <- round(sum(x$sim[[hyp]]$main$ess[,"ess"]),digits)
+
 
     if (length(x$ptest)==1) {
       rownames(res) <- c("Prop. rejecting at least 1 hypothesis:",
@@ -1106,7 +1156,7 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
                             paste("Stage",1:object$J)})
       dimnames(out)[[2]][object$J] <- paste0(dimnames(out)[[2]][object$J],
                                                                 "\u2020")
-      shift = 12
+      shift = 13
       if (!is.null(object$sim)) {
         if (!is.null(object$sim$H1)) {
           tmp = cbind(NA,round(object$sim$H1$main$ess[,c("low","ess","high")],
@@ -1176,7 +1226,7 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
       if (!is.null(object$sim$H0)) {
           out = cbind(out,"|"="|", round(object$sim$H0$main$futility,digits))
       }
-      shift = max(nchar(rownames(out)))+1
+      shift = 12
       space = cumsum(apply(rbind(out,colnames(out)),2,
                             function(x) max(nchar(x)))+1)
       bar   = which(names(space)=="|")

@@ -27,19 +27,37 @@ mams.check.simultaneous <- function(obj) {
     warning("Number of points for integration by quadrature is small which may
             result in inaccurate solutions.")
   }
-  if (is.null(mc[["r"]])) { 
+if (is.null(mc[["r"]])) {
     mc[["r"]] <- 1:mc[["J"]]
   }
-  if (is.null(mc[["r0"]])) { 
+  if (is.null(mc[["r0"]])) {
     mc[["r0"]] <- 1:mc[["J"]]
   }
   if (length(eval(mc[["r"]])) != length(eval(mc[["r0"]]))) {
     stop("Different length of allocation ratios on control and experimental
-          treatments.")
+      treatments.")
   }
   if (length(eval(mc[["r"]])) != mc[["J"]]) {
     stop("Length of allocation ratios does not match number of stages.")
   }
+
+  if (any(diff(mc[["r0"]]) <= 0)) {
+    stop("`r0` must be a monotonically increasing vector.")
+  }
+
+  if (any(diff(mc[["r"]]) <= 0)) {
+    stop("`r` must be a monotonically increasing vector.")
+  }
+  if (mc[["r0"]][1] < 1) {
+    stop("`r0[1]` must be >= 1.")
+  }
+  if (any(mc[["r"]] <= 0)) {
+    stop("`r` values must be > 0.")
+  }
+  if (mc[["r0"]][1] %% 1 != 0) {
+    stop("First element of `r0` must be integers.")
+  }
+
   # alpha and power
   if (mc[["alpha"]] < 0 | mc[["alpha"]] > 1 |
     mc[["power"]] < 0 | mc[["power"]] > 1) {
@@ -56,12 +74,12 @@ mams.check.simultaneous <- function(obj) {
     if (mc[["p"]] < 0 | mc[["p"]] > 1) {
       stop("Treatment effect parameter 'p0' not within 0.5 and 1.")
     }
-    if (mc[["p"]] < 0.5) { 
+    if (mc[["p"]] < 0.5) {
       stop("Interesting treatment effect less than 0.5 which implies that
             reductions in effect over placebo are interesting.")
     }
     # p0
-    if (!is.numeric(mc[["p0"]])) { 
+    if (!is.numeric(mc[["p0"]])) {
       mc[["p0"]] <- 0.5
     } else {
       if (mc[["p0"]] < 0 | mc[["p0"]] > 1) {
@@ -83,11 +101,11 @@ mams.check.simultaneous <- function(obj) {
       stop("Negative treatment effect parameter 'delta'.")
     }
     # delta0
-    if (!is.numeric(mc[["delta0"]])) { 
+    if (!is.numeric(mc[["delta0"]])) {
       mc[["delta0"]] <- 0
       warning("assigned value '0' to argument 'delta0'")
     }
-    if (mc[["delta"]] <= mc[["delta0"]]) { 
+    if (mc[["delta"]] <= mc[["delta0"]]) {
       stop("Interesting treatment effect must be larger than uninteresting
             effect.")
     }
@@ -196,7 +214,7 @@ mams.mesh.simultaneous <- function(x, d, w = 1 / length(x) + x * 0) {
 ## x is vector of dummy variables ( the t_j in gdt paper ),
 ## l and u are boundary vectors
 ################################################################################
-mams.prodsum1.simultaneous <- function(x, l, u, r, r0, r0diff, J, K, 
+mams.prodsum1.simultaneous <- function(x, l, u, r, r0, r0diff, J, K,
                                                                         Sigma) {
   .Call("C_prodsum1",
     x2 = as.double(x), l2 = as.double(l), u2 = as.double(u),
@@ -211,7 +229,7 @@ mams.prodsum1.simultaneous <- function(x, l, u, r, r0, r0diff, J, K,
 ## 'MAMS.prodsum2' evaluates the integrand of Pi_1 according to  gdt paper:
 ################################################################################
 
-mams.prodsum2.simultaneous <- function(x, r, r0, u, K, delta, delta0, n, 
+mams.prodsum2.simultaneous <- function(x, r, r0, u, K, delta, delta0, n,
                                                                           sig) {
   .Call("C_prodsum2",
     x2 = as.double(x), r2 = as.double(r), r02 = as.double(r0),
@@ -225,7 +243,7 @@ mams.prodsum2.simultaneous <- function(x, r, r0, u, K, delta, delta0, n,
 ## 'MAMS.prodsum3' evaluates the integrand of Pi_j for j>1.
 ################################################################################
 
-mams.prodsum3.simultaneous <- function(x, l, u, r, r0, r0diff, J, K, delta, 
+mams.prodsum3.simultaneous <- function(x, l, u, r, r0, r0diff, J, K, delta,
                                             delta0, n, sig, Sigma, SigmaJ) {
   .Call("C_prodsum3",
     x2 = as.double(x), l2 = as.double(l), u2 = as.double(u),
@@ -288,6 +306,7 @@ mams.typeI.simultaneous <- function(C, alpha, r, r0, r0diff, J, K, Sigma,
   }
 
   if (parallel) {
+
     evs <- future.apply::future_apply(mmp$X, 1, mams.prodsum1.simultaneous,
       l = l, u = u, r = r, r0 = r0, r0diff = r0diff,
       J = J, K = K, Sigma = Sigma, future.seed = TRUE,
@@ -317,12 +336,15 @@ mams.typeI.simultaneous <- function(C, alpha, r, r0, r0diff, J, K, Sigma,
 ##  The midpoint rule is used with a range of -6 to 6 in each dimension.
 ################################################################################
 
-mams.typeII.simultaneous <- function(n, beta, l, u, r, r0, r0diff, J, K, 
+mams.typeII.simultaneous <- function(n, beta, l, u, r, r0, r0diff, J, K,
                                           delta, delta0,
-                                          sig, Sigma, mmp_j, 
+                                          sig, Sigma, mmp_j,
                                           parallel = parallel) {
+
+# browser()
+
   evs <- apply(mmp_j[[1]]$X, 1, mams.prodsum2.simultaneous,
-    r = r, r0 = r0, K = K, u = u, delta = delta, delta0 = delta0, n = n, 
+    r = r, r0 = r0, K = K, u = u, delta = delta, delta0 = delta0, n = n,
                                                                   sig = sig
   )
   pi <- mmp_j[[1]]$w %*% evs
@@ -332,6 +354,7 @@ mams.typeII.simultaneous <- function(n, beta, l, u, r, r0, r0diff, J, K,
       A <- diag(sqrt(r[j] / (r[j] - r[1:(j - 1)])), ncol = j - 1)
       SigmaJ <- A %*% (Sigma[1:(j - 1), 1:(j - 1)] - Sigma[1:(j - 1), j] %*%
         t(Sigma[1:(j - 1), j])) %*% A
+
       if (parallel) {
         evs <- future.apply::future_apply(mmp_j[[j]]$X, 1,
           mams.prodsum3.simultaneous,
@@ -344,8 +367,8 @@ mams.typeII.simultaneous <- function(n, beta, l, u, r, r0, r0diff, J, K,
         )
       } else {
         evs <- apply(mmp_j[[j]]$X, 1, mams.prodsum3.simultaneous,
-          l = l, u = u, r = r, r0 = r0, r0diff = r0diff, J = j, K = K, 
-          delta = delta, delta0 = delta0, n = n, sig = sig, 
+          l = l, u = u, r = r, r0 = r0, r0diff = r0diff, J = j, K = K,
+          delta = delta, delta0 = delta0, n = n, sig = sig,
           Sigma = Sigma[1:j, 1:j],
           SigmaJ = SigmaJ
         )
@@ -368,7 +391,7 @@ mams.fit.simultaneous <- function(obj) {
   }
 
   parallel  <- ifelse(is.null(obj$parallel), FALSE, obj$parallel)
-  
+
   ##############################################################################
   ## Convert treatment effects into absolute effects with standard deviation 1:
   ##############################################################################
@@ -381,9 +404,9 @@ mams.fit.simultaneous <- function(obj) {
   } else {
 
     delta <- ifelse(is.null(obj[["delta"]]), obj$par[["delta"]],
-                                              obj[["delta"]]) 
+                                              obj[["delta"]])
     delta0 <- ifelse(is.null(obj[["delta0"]]), obj$par[["delta0"]],
-                                              obj[["delta0"]]) 
+                                              obj[["delta0"]])
     # for subsequent if(J==1 & p0==0.5)
     p0 <- pnorm(delta0 / sqrt(2 * obj$sd^2))
     sig <- obj$sd
@@ -401,13 +424,22 @@ mams.fit.simultaneous <- function(obj) {
     )
   }
 
+mmp_1 <- as.list(rep(NA, 1))
+for (j in 1:1) {
+  mmp_1[[j]] <- mams.mesh.simultaneous(
+    x = (1:obj$Q - .5) / obj$Q * 12 - 6, j,
+    w = rep(12 / obj$Q, obj$Q)
+  )
+}
+
+
+
   ##############################################################################
   ## Ensure equivalent allocation ratios yield same sample size
   ##############################################################################
 
-  h <- min(c(obj$r, obj$r0))
-  r <- obj$r / h
-  r0 <- obj$r0 / h
+  r <- obj$r
+  r0 <- obj$r0
 
   ##############################################################################
   ## Create the variance covariance matrix from allocation proportions:
@@ -423,7 +455,6 @@ mams.fit.simultaneous <- function(obj) {
   ##############################################################################
   r0lag1 <- c(0, r0[1:obj$J - 1])
   r0diff <- r0 - r0lag1
-
   ##############################################################################
   ## Find boundaries using 'typeI'
   ##############################################################################
@@ -444,8 +475,8 @@ mams.fit.simultaneous <- function(obj) {
     alpha = obj$alpha, r = r, r0 = r0, r0diff = r0diff,
     J = obj$J, K = obj$K, Sigma = Sigma, mmp = mmp_j[[obj$J]],
     ushape = obj$ushape, lshape = obj$lshape, lfix = obj$lfix,
-    ufix = obj$ufix, 
-    parallel = parallel, 
+    ufix = obj$ufix,
+    parallel = parallel,
     print = obj$print,
     tol = 0.001
   )$root, silent = TRUE)
@@ -479,7 +510,7 @@ mams.fit.simultaneous <- function(obj) {
       if (obj$ushape == "triangular") {
         l <- -uJ * (1 - 3 * r / r[obj$J]) / sqrt(r)
       } else {
-        l <- -uJ * (1 - 3 * r / r[obj$J]) / sqrt(r) / 
+        l <- -uJ * (1 - 3 * r / r[obj$J]) / sqrt(r) /
                                             (-1 * (1 - 3) / sqrt(obj$J))
       }
     }
@@ -515,13 +546,11 @@ mams.fit.simultaneous <- function(obj) {
       )
     }
   }
-
   ##############################################################################
   ##  Now find samplesize for arm 1 stage 1 (n)  using 'typeII'.
   ##  Sample sizes for all stages are then determined by
   ##  r*n and r0*n.
   ##############################################################################
-
   if (obj$J == 1 & p0 == 0.5) {
   if (obj$print) {
         message(" iii) perform sample size calculation\n", appendLF = FALSE)
@@ -529,8 +558,11 @@ mams.fit.simultaneous <- function(obj) {
       if (r0 > r) {
       r <- r / r0
       r0 <- r0 / r0
+      message("Allocation ratio for control arm at first stage greater than for
+      treatment arm(s), using normalisation by r0[1] \n")
     }
     rho <- r / (r + r0)
+    # browser()
     corr <- matrix(rho, obj$K, obj$K) + diag(1 - rho, obj$K)
     if (obj$K == 1) {
       quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), sigma = 1)$quantile
@@ -540,61 +572,100 @@ mams.fit.simultaneous <- function(obj) {
     n <- ((quan + qnorm(obj$power)) / ifelse(is.null(obj$p), delta,
                                 (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r)
   } else {
+
+    if (r[1] > r0[1]) {
+      r <- r / r0[1]
+      r0 <- r0 / r0[1]
+      message("Allocation ratio for control arm at first stage greater than for
+      treatment arm(s), using normalisation by r0[1] \n")
+    }
     n <- obj$nstart
     ############################################################################
     ## program could be very slow starting at n=0, may want to start at more
     ## sensible lower bound on n unlike type I error, power equation does not
-    ## neccessarily have unique solution n therefore search for smallest 
+    ## neccessarily have unique solution n therefore search for smallest
     # solution:
     ############################################################################
-
     pow <- 0
     if (obj$sample.size) {
       if (obj$print) {
         message(" iii) perform sample size calculation\n", appendLF = FALSE)
       }
+          # browser()
       if (is.null(obj$nstop)) {
         nx <- obj$nstart
         po <- 0
+
         while (po == 0) {
           nx <- nx + 1
           po <- (mams.typeII.simultaneous(nx,
-            beta = 1 - obj$power, l = l, u = u,
-            r = obj$r, r0 = obj$r0, r0diff = r0diff, J = 1,
+            beta = 1 - obj$power, l = l[obj$J], u = u[obj$J],
+            r = r[obj$J], r0 = r0[obj$J], r0diff = r0diff[obj$J], J = 1,
             K = obj$K, delta = delta, delta0 = delta0,
-            sig = sig, Sigma = Sigma, mmp_j = mmp_j,
+            sig = sig, Sigma = matrix(1, 1, 1), 
+            mmp_j =  mmp_1,
             parallel = parallel
           ) < 0)
-        }
-        obj$nstop <- 3 * nx
-      }
+          }
+
+        # OLD
+          # nx <- obj$nstart
+          # po <- 0
+          # while (po == 0) {
+          #  nx <- nx + 1
+          #  po <- (mams.typeII.simultaneous(nx,
+          #    beta = 1 - obj$power, l = l, u = u,
+          #    r = r, r0 = r0, r0diff = r0diff, J = 1, K = obj$K,
+          #    delta = delta, delta0 = delta0,
+          #    sig = sig, Sigma = Sigma, mmp_j = mmp_j,
+          #    parallel = parallel
+          #  ) < 0)
+          # }
+        # FIX 1: not efficient 
+          # tmp = mams(K = obj$K, J=1, 
+          # alpha=obj$alpha,power = obj$power, 
+          # delta = delta, delta0 = delta0,sd = sig,
+          # parallel=parallel, print=FALSE, nsim=1000)
+          # nx = (tmp$rMat*ceiling(tmp$n))[2,1]        
+        # FIX 2: not correct but not too wrong
+        # nx <- obj$nstart
+        # po <- 0
+        # while (po == 0) {
+        #   nx <- nx + 1
+        #   po <- (mams.typeII.simultaneous(nx,
+        #     beta = 1 - obj$power, l = l[obj$J], u = u[obj$J],
+        #     r = r[obj$J], r0 = r0[obj$J], r0diff = r0diff, J = 1, K = obj$K,
+        #     delta = delta, delta0 = delta0,
+        #     sig = sig, Sigma = Sigma, mmp_j = mmp_j,
+        #     parallel = parallel
+        #   ) < 0)
+        # }
+    #   if (r0[1] > r[1]) {
+    #   r <- r / r0
+    #   r0 <- r0 / r0
+    # message("Allocation ratio for control arm at first stage greater than for
+    #   treatment arm(s), using normalisation by r0[1] \n")
+    # }
+    # rho <- r[obj$J] / (r[obj$J] + r0[obj$J])
+    # corr <- matrix(rho, obj$K, obj$K) + diag(1 - rho, obj$K)
+    # if (obj$K == 1) {
+    #   quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), sigma = 1)$quantile
+    # } else {
+    # quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), corr = corr)$quantile
+    # }
+    #nx <- ((quan + qnorm(obj$power)) / ifelse(is.null(obj$p), delta,
+    #                         (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r[obj$J])
+    #     # result:
+        iterations <- 3 * ceiling(nx)
+}
+nstop <- if (is.null(obj$nstop)) iterations else obj$nstop
       if (obj$print) {
         message(paste0(
           "      (maximum iteration number = ",
-          obj$nstop - obj$nstart + 1, ")\n      "
+          nstop - obj$nstart + 1, ")\n      "
         ), appendLF = FALSE)
       }
-      while (pow == 0 & n <= obj$nstop) {
-        n <- n + 1
-        pow <- (mams.typeII.simultaneous(n,
-          beta = 1 - obj$power, l = l, u = u,
-          r = obj$r, r0 = obj$r0, r0diff = r0diff,
-          J = obj$J, K = obj$K, delta = delta,
-          delta0 = delta0, sig = sig,
-          Sigma = Sigma, mmp_j = mmp_j,
-          parallel = parallel
-        ) < 0)
-        if (obj$print) {
-          if (any(seq(0, obj$nstop, 50) == n)) {
-            message(n, "\n      ",
-              appendLF = FALSE
-            )
-          } else {
-            message(".", appendLF = FALSE)
-          }
-        }
-      }
-      while (pow == 0 & n <= obj$nstop) {
+      while (pow == 0 & n <= nstop) {
         n <- n + 1
         pow <- (mams.typeII.simultaneous(n,
           beta = 1 - obj$power, l = l, u = u,
@@ -605,7 +676,7 @@ mams.fit.simultaneous <- function(obj) {
           parallel = parallel
         ) < 0)
         if (obj$print) {
-          if (any(seq(0, obj$nstop, 50) == n)) {
+          if (any(seq(0, nstop, 50) == n)) {
             message(n, "\n      ",
               appendLF = FALSE
             )
@@ -615,14 +686,15 @@ mams.fit.simultaneous <- function(obj) {
         }
       }
 
+      n <- n * r0[1]
+
       if (obj$print) {
         message("\n", appendLF = FALSE)
       }
-      if ((n - 1) == obj$nstop) {
-        warning("The sample size search was stopped because
-                                      the maximum sample size (nstop, default:
-                                      3 times the sample size of a fixed sample
-                                      design) was reached.\n")
+      if ((n - 1) == nstop) {
+        warning(paste("The sample size search was stopped because the maximum",
+        "sample size (nstop, default: 3 times the sample size of a fixed",
+        "sample design) was reached.\n"))
       }
     } else {
       n <- NULL
@@ -633,23 +705,46 @@ mams.fit.simultaneous <- function(obj) {
   #############################################################
 
   res <- NULL
-  res  <- list(K=obj$K, J=obj$J, alpha=obj$alpha, power=obj$power, 
-                r=obj$r, r0=obj$r0, p=obj$p, p0=obj$p0, 
-                delta=obj[["delta"]], delta0=obj[["delta0"]], sd=obj$sd, 
-                ushape=obj$ushape, lshape=obj$lshape, 
+  res  <- list(K=obj$K, J=obj$J, alpha=obj$alpha, power=obj$power,
+                r=obj$r, r0=obj$r0, p=obj$p, p0=obj$p0,
+                delta=obj[["delta"]], delta0=obj[["delta0"]], sd=obj$sd,
+                ushape=obj$ushape, lshape=obj$lshape,
                 ufix=obj$ufix, lfix=obj$lfix,
-                nstart=obj$nstart, nstop=obj$nstop, 
-                sample.size=obj$sample.size, Q=obj$Q, 
-                type=obj$type, parallel=parallel, print=obj$print, 
+                nstart=obj$nstart, nstop=obj$nstop,
+                sample.size=obj$sample.size, Q=obj$Q,
+                type=obj$type, parallel=parallel, print=obj$print,
                 nsim=obj$nsim, H0=obj$H0)
   res$l <- l
   res$u <- u
   res$n <- n
   ## allocation ratios
-  res$rMat <- rbind(r0, matrix(r, ncol = obj$J, nrow = obj$K, byrow = TRUE))
-  ## maximum total sample sizeres$Q <- K*r[J]*n+r0[J]*n ## maximum total
+
+  h <- min(obj$r0) # check that here we are not using r0[1]
+  r_norm <- obj$r / h
+  r0_norm <- obj$r0 / h
+  # res$rMat <- rbind(r0, matrix(r, ncol = obj$J, nrow = obj$K, byrow = TRUE))
+  res$rMat <- rbind(r0_norm, matrix(r_norm, ncol = obj$J, nrow = obj$K,
+                                    byrow = TRUE))
+
+  dimnames(res$rMat) <- list(
+      c("Control", paste0("T", 1:obj$K)),
+      paste("Stage", 1:obj$J)
+    )
+
+
+  ## maximum total sample size
   ## sample size
-  res$N <- sum(ceiling(res$rMat[, obj$J] * res$n))
+
+  res$N <- sum(round(res$rMat[, obj$J] * res$n, digits = 0))
+
+
+  n_temp <- n / r0[1]
+  r0diff <- c(r0[1], diff(r0))
+  rdiff <- c(r[1], diff(r))
+  rMat <- rbind(r0diff, matrix(rdiff, ncol = obj$J, nrow = obj$K, byrow = TRUE))
+  new_rMat <-rMat * n_temp
+
+
 
 
   res$alpha.star <- alpha.star
@@ -682,8 +777,8 @@ mams.fit.simultaneous <- function(obj) {
         )
         sim  <- unpack_object(sim)
         res$sim  <- sim$sim
-        res$par <- sim$par 
-      } else {
+        res$par <- sim$par
+  } else {
         res$sim <- NULL
       }
   } else {
@@ -699,8 +794,8 @@ mams.fit.simultaneous <- function(obj) {
 ###################### simulation function ####################################
 ###############################################################################
 
-mams.sim.simultaneous <- function(obj = NULL, nsim = NULL, nMat = NULL, 
-                                      u = NULL, l = NULL, pv = NULL, 
+mams.sim.simultaneous <- function(obj = NULL, nsim = NULL, nMat = NULL,
+                                      u = NULL, l = NULL, pv = NULL,
                                       deltav = NULL, sd = NULL, ptest = NULL,
                                       parallel = NULL, H0 = NULL) {
 
@@ -758,7 +853,7 @@ if (!is.null(deltav) | !is.null(pv)) {
     J <- ncol(t(final_params$nMat))
     par <- final_params
     u   <- par$u
-    l   <- par$l 
+    l   <- par$l
   }
 
   # If MAMS object is provided
@@ -784,7 +879,7 @@ if (!is.null(deltav) | !is.null(pv)) {
           c(par$p, rep(par$p0, K - 1))
         } else if (is.numeric(par$pv)) {
           par$pv
-        } 
+        }
       } else {
         pv
       },
@@ -794,7 +889,7 @@ if (!is.null(deltav) | !is.null(pv)) {
         } else if (is.numeric(par[["deltav"]])) {
           par[["deltav"]]
         } else {
-              stop("Please provide either pv or deltav or delta, delta0 or 
+              stop("Please provide either pv or deltav or delta, delta0 or
               p, p0 parameters")
         }
       } else {
@@ -821,6 +916,7 @@ nMat  <- if (length(par$nMat) == 0) {
               object with argument 'sample.size = TRUE' ")
       } else {
         nMat <- t(obj$rMat * obj$n)
+
       }
     } else {
       stop("'nMat' and 'obj' can't both be set to NULL")
@@ -852,8 +948,8 @@ nMat  <- if (length(par$nMat) == 0) {
     }
     par$sig <- sd
   }
-  
-  
+
+
     # pv
     pv <- par$pv
     deltav <- par[["deltav"]]
@@ -877,7 +973,7 @@ nMat  <- if (length(par$nMat) == 0) {
       par[["delta"]] <- deltav[1]
       par[["delta0"]] <- deltav[2]
       # deltav
-    } 
+    }
     if (is.numeric(deltav)) {
       if (length(deltav) != (ncol(nMat) - 1)) stop("Length of deltav is
                                               not equal to K.")
@@ -915,7 +1011,7 @@ nMat  <- if (length(par$nMat) == 0) {
   } else {
     if (!is.null(obj)) {
       if (length(l) != obj$J) {
-        stop("the length of 'l' should match the number of stages considered 
+        stop("the length of 'l' should match the number of stages considered
         when generating the MAMS object indicated under 'obj'.")
       }
     }
@@ -931,12 +1027,13 @@ nMat  <- if (length(par$nMat) == 0) {
   ## - treatment effect is specified by delta, delta0 and sig
   ##############################################################################
 
+
   sim <- function(n, l, u, R, r0, deltas, sig, J, K, Rdiff, r0diff) {
   ##############################################################################
   # Create test statistics using independent normal increments in sample means:
   ##############################################################################
-
     # directly simulate means per group and time points:
+
     mukhats <-
       apply(matrix(rnorm(J * K), J, K) * sig * sqrt(Rdiff * n) + Rdiff * n *
         matrix(deltas, nrow = J, ncol = K, byrow = TRUE), 2, cumsum) / (R * n)
@@ -958,6 +1055,8 @@ nMat  <- if (length(par$nMat) == 0) {
         break
       }
     }
+
+
     # any arm > control?
     rej <- ifelse(any(emat[j, ], na.rm = TRUE), j, 0)
     # if yes, is T1 also the arm with the largest test statistics
@@ -968,7 +1067,7 @@ nMat  <- if (length(par$nMat) == 0) {
     ), FALSE)
     # out
     return(list(
-      any = rej > 0, stage = rej, first = first, efficacy = emat, 
+      any = rej > 0, stage = rej, first = first, efficacy = emat,
       futility = fmat, difference = dmat, statistic = zks, samplesize = nmat
     ))
   }
@@ -1000,20 +1099,20 @@ nMat  <- if (length(par$nMat) == 0) {
   ##
   ## simulation
   ##
-  
+
   ## H1
   if (!all(pv == 0.5)) {
     # sim
     H1 <- list()
     if (parallel) {
-      H1$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0, 
+      H1$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0,
       deltas, sig, J, K, Rdiff, r0diff,
         future.seed = TRUE
       )
       # , future.packages="MAMS"
     } else {
-      H1$full <- future_sapply(rep(n, nsim), sim, l, u, R, r0, deltas, sig, J, 
-      K, Rdiff, r0diff, future.seed = TRUE
+      H1$full <- sapply(rep(n, nsim), sim, l, u, R, r0, deltas, sig, J,
+      K, Rdiff, r0diff
       )
     }
     # main results
@@ -1061,11 +1160,11 @@ nMat  <- if (length(par$nMat) == 0) {
       tmp3 <- mean(tmp2 > 0)
       tmp4 <- mean(tmp2 == K)
     }
-    H1$main$efficacy <- as.data.frame(rbind(tmp1, tmp3, cumsum(tmp6) / nsim, 
+    H1$main$efficacy <- as.data.frame(rbind(tmp1, tmp3, cumsum(tmp6) / nsim,
                                                                       tmp4))
     dimnames(H1$main$efficacy) <- list(
       c(
-      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best", 
+      paste0("T", 1:K, "  rejected"), "Any rejected", "T1  is best",
               "All rejected"
       ),
       paste("Stage", 1:J)
@@ -1094,19 +1193,17 @@ nMat  <- if (length(par$nMat) == 0) {
     # sim
     H0 <- list()
     if (parallel) {
-      H0$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0, 
+      H0$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0,
                                             rep(0, K), sig, J, K, Rdiff, r0diff,
                                             future.seed = TRUE
       )
       # , future.packages="MAMS"
     } else {
     # ! FIXME Check this statement: maybe it should be just sapply?
-      H0$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0, 
-                                            rep(0, K), sig, J, K, Rdiff, r0diff,
-                              future.seed = TRUE
+      H0$full <- sapply(rep(n, nsim), sim, l, u, R, r0,
+                                            rep(0, K), sig, J, K, Rdiff, r0diff
       )
     }
-
     # main results
     H0$main <- list()
     # sample size
@@ -1152,7 +1249,7 @@ nMat  <- if (length(par$nMat) == 0) {
       tmp3 <- mean(tmp2 > 0)
       tmp4 <- mean(tmp2 == K)
     }
-    H0$main$efficacy <- as.data.frame(rbind(tmp1, tmp3, cumsum(tmp6) / nsim, 
+    H0$main$efficacy <- as.data.frame(rbind(tmp1, tmp3, cumsum(tmp6) / nsim,
                                                                       tmp4))
     dimnames(H0$main$efficacy) <- list(
       c(
@@ -1312,9 +1409,9 @@ if (!isTRUE(x$sample.size)) {
 ###############################################################################
 ###################### summary function #######################################
 ###############################################################################
-mams.summary.simultaneous <- function(object, digits, 
+mams.summary.simultaneous <- function(object, digits,
                                                   extended = FALSE, ...) {
-  object  <- unpack_object(object)       
+  object  <- unpack_object(object)
 
 if (object$type %in% c("ordinal", "tite")) {
 print(object)
@@ -1322,7 +1419,7 @@ return(invisible(NULL))
 }
 
 if (is.null(object$sim)) {
-      stop("No simulation data provided")  
+      stop("No simulation data provided")
 }
   cli_h1(col_red("MAMS design"))
   ## normal
@@ -1358,7 +1455,7 @@ if (is.null(object$sim)) {
       }
         out = cbind(out, "|" = "|",
           cohen.d = round(object$par[["deltav"]],digits),
-          prob.scale = round(pnorm(object$par[["deltav"]] / 
+          prob.scale = round(pnorm(object$par[["deltav"]] /
                                                       (sqrt(2)*object$par$sd)),
                               digits))
             hyp = c(hyp,"H1")
@@ -1458,7 +1555,7 @@ if (is.null(object$sim)) {
           )
           cat(paste0(rep(" ", shift), collapse = ""), "Cumulated",
             paste0(rep(" ", space[bar[1]] - 11), sep = ""), "| Under H1",
-            paste0(rep(" ", space[bar[2] - 1] - space[bar[1] - 1] - 10), 
+            paste0(rep(" ", space[bar[2] - 1] - space[bar[1] - 1] - 10),
                                                           collapse = ""),
             "| Under H0\n",
             sep = ""
@@ -1546,8 +1643,8 @@ if (is.null(object$sim)) {
       if (any(hyp == "H1")) {
         prob <- object$sim$H1$main$efficacy["T1  is best", object$J]
         text <- paste0(
-          "Estimated prob. T1  is best (\u00A7) = ", 
-                                              round(prob * 100, digits), 
+          "Estimated prob. T1  is best (\u00A7) = ",
+                                              round(prob * 100, digits),
           "%, [",
           paste0(
             round(qbinom(
@@ -1679,7 +1776,7 @@ if (is.null(object$sim)) {
         function(x) max(nchar(x))
       ) + 1)
       bar <- which(names(space) == "|")
-      cat(paste0(rep(" ", shift), collapse = ""), 
+      cat(paste0(rep(" ", shift), collapse = ""),
                                   paste0("Stage 1     | Stage 2\n"))
       print(out)
       cat("\n")
@@ -1698,7 +1795,7 @@ if (is.null(object$sim)) {
         function(x) max(nchar(x))
       ) + 1)
       bar <- which(names(space) == "|")
-      cat(paste0(rep(" ", shift), collapse = ""), 
+      cat(paste0(rep(" ", shift), collapse = ""),
                                   paste0("Stage 1      | Stage 2\n"))
       print(out)
       cat("\n")
@@ -1769,12 +1866,12 @@ if (is.null(object$sim)) {
 ###################### plot function #########################################
 ###############################################################################
 mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
-                                        col = NULL, pch = NULL, lty = NULL, 
-                                        main = NULL, xlab = "Analysis", 
-                                        ylab = "Test statistic", ylim = NULL, 
+                                        col = NULL, pch = NULL, lty = NULL,
+                                        main = NULL, xlab = "Analysis",
+                                        ylab = "Test statistic", ylim = NULL,
                                         type = NULL, las = 1, ...) {
 
-  x  <- unpack_object(x)                                      
+  x  <- unpack_object(x)
   # checks:
   which.plot <- c(TRUE, TRUE)
   if (!is.null(which)) {
@@ -1834,14 +1931,14 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
           ifelse(x$par$ushape == "triangular", "Triangular", "")
         )
       )
-      eff <- ifelse(eff == "", "Efficacy limit", 
+      eff <- ifelse(eff == "", "Efficacy limit",
                                                 paste0(eff, " efficacy limits"))
       fut <- ifelse(x$par$lshape == "obf", "O'Brien & Fleming",
         ifelse(x$par$lshape == "pocock", "Pocock",
           ifelse(x$par$lshape == "triangular", "Triangular", "")
         )
       )
-      fut <- ifelse(fut == "", "Futility limit", 
+      fut <- ifelse(fut == "", "Futility limit",
                                                 paste0(fut, " futility limits"))
       legend("top",
         ncol = 1, legend = c(eff, fut), col = col1[c(1, 3)], pch = 15, lwd = 2,
@@ -1856,7 +1953,7 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
       )
       lines(x$l, col = col1[3], lwd = 2)
       points(x$l[1:(x$J - 1)], col = col1[3], lwd = 2)
-      text(1:(x$J - 1), x$l[-x$J], format(round(x$l[-x$J], 3)), col = col1[3], 
+      text(1:(x$J - 1), x$l[-x$J], format(round(x$l[-x$J], 3)), col = col1[3],
                                                                       pos = 1)
     }
   }
@@ -1866,10 +1963,10 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
     hyp <- !sapply(x$sim, is.null)
     hyp <- names(hyp)[hyp]
     if (length(hyp) > 1) {
-      layout(matrix(c(1, 2, 3, 3), ncol = 2, byrow = TRUE), widths = 1, 
+      layout(matrix(c(1, 2, 3, 3), ncol = 2, byrow = TRUE), widths = 1,
                                                             heights = c(1, .15))
     } else {
-      layout(matrix(c(1, 2), ncol = 2, byrow = TRUE), widths = c(1, .3), 
+      layout(matrix(c(1, 2), ncol = 2, byrow = TRUE), widths = c(1, .3),
                                                       heights = 1)
     }
     rem <- "All rejected"
@@ -1922,14 +2019,14 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
         }
         if (grp[gw] == "T1  is best" & hyp[hw] == "H1") {
           points(x$J, eff[grp[gw], x$J], col = col.g[gw], cex = 1)
-          text(x$J, eff[grp[gw], x$J], paste(round(eff[grp[gw], x$J] * 100, 2), 
+          text(x$J, eff[grp[gw], x$J], paste(round(eff[grp[gw], x$J] * 100, 2),
                                                                           "%"),
             col = col.g[gw], pos = 1, cex = .75
           )
         }
         if (grp[gw] == "Any rejected" & hyp[hw] == "H0") {
           points(x$J, eff[grp[gw], x$J], col = col.g[gw], cex = 1)
-          text(x$J, eff[grp[gw], x$J], paste(round(eff[grp[gw], x$J] * 100, 2), 
+          text(x$J, eff[grp[gw], x$J], paste(round(eff[grp[gw], x$J] * 100, 2),
                                                                           "%"),
             col = col.g[gw], pos = 3, cex = .75
           )
@@ -1942,7 +2039,7 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
     } else {
       par(mar = c(3, 0, 1.5, 0.25))
     }
-    plot(1, 1, pch = "", ylim = c(0, 1), xlim = c(0, 1), axes = FALSE, 
+    plot(1, 1, pch = "", ylim = c(0, 1), xlim = c(0, 1), axes = FALSE,
                                                           xlab = "", ylab = "")
     # rect(-10,-10,10,10,col="light gray",border=NULL)
     legend("top",
@@ -1952,7 +2049,7 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
     )
     legend("bottom",
       ncol = ifelse(length(hyp) > 1, 2, 1),
-      legend = c("Futility", "Efficacy"), col = 1, pch = NA, lwd = 2, 
+      legend = c("Futility", "Efficacy"), col = 1, pch = NA, lwd = 2,
                 lty = c(2, 1), bg = NA, box.lwd = NA, pt.cex = 1.5, cex = .9
     )
   }
@@ -1962,50 +2059,50 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
 ###################### new.bounds function ####################################
 ###############################################################################
 #' Function to update boundaries based on observed sample sizes
-#' @description The function determines updated boundaries of a multi-arm 
+#' @description The function determines updated boundaries of a multi-arm
 #' multi-stage study based on observed number of observations per arm.
 #' @param K  Number of experimental treatments (default=3).
 #' @param J Number of stages (default=2).
 #' @param alpha One-sided familywise error rate (default=0.05).
-#' @param nMat Jx(K+1) dimensional matrix of observed/expected sample sizes. 
-#' Rows correspond to stages and columns to arms. First column is control 
+#' @param nMat Jx(K+1) dimensional matrix of observed/expected sample sizes.
+#' Rows correspond to stages and columns to arms. First column is control
 #' (default: 2x4 matrix with 10 subjects per stage and arm).
 #' @param u Vector of previously used upper boundaries (default=NULL).
 #' @param l Vector of previously used upper boundaries (default=NULL).
-#' @param ushape Shape of upper boundary. Either a function specifying the 
+#' @param ushape Shape of upper boundary. Either a function specifying the
 #' shape or one of "pocock", "obf" (the default), "triangular" and "fixed".
 #'  See details.
-#' @param lshape Shape of lower boundary. Either a function specifying the 
-#' shape or one of "pocock", "obf", "triangular" and "fixed" (the default). 
+#' @param lshape Shape of lower boundary. Either a function specifying the
+#' shape or one of "pocock", "obf", "triangular" and "fixed" (the default).
 #' See details.
 #' @param ufix 	Fixed upper boundary (default=NULL). Only used if shape="fixed".
 #' @param lfix Fixed lower boundary (default=0). Only used if shape="fixed".
-#' @param N Number of quadrature points per dimension in the outer integral 
+#' @param N Number of quadrature points per dimension in the outer integral
 #' (default=20).
 #' @param parallel 	if TRUE (default), allows parallelisation of the computation
-#'  via a user-defined strategy specified by means of the function 
-#' future::plan(). If not set differently, the default strategy is sequential, 
+#'  via a user-defined strategy specified by means of the function
+#' future::plan(). If not set differently, the default strategy is sequential,
 #' which corresponds to a computation without parallelisation.
 #' @param print if TRUE (default), indicate at which stage the computation is.
-#' @details This function finds the boundaries for a given matrix of sample 
-#' sizes in multi-arm multi-stage study with K active treatments plus control. 
+#' @details This function finds the boundaries for a given matrix of sample
+#' sizes in multi-arm multi-stage study with K active treatments plus control.
 #' The vectors u and l are the boundaries used so far while u.shape and l.shape
-#'  specify the shape to the boundaries for the remaining analysis. 
-#' By specifying u and l as NULL, a design using only the shapes given by 
-#' ushape and lshape can be found for any sample sizes per stage and arm. 
-#' 
-#' The shape of the boundaries (ushape, lshape) are either using the 
-#' predefined shapes following Pocock (1977), O'Brien & Fleming (1979) 
-#' or the triangular Test (Whitehead, 1997) using options "pocock", "obf" or 
-#' "triangular" respectively, are constant (option "fixed") or supplied in as 
-#' a function. If a function is passed it should require exactly one argument 
-#' specifying the number of stages and return a vector of the same length. 
-#' The lower boundary shape is required to be non-decreasing while the upper 
-#' boundary shape needs to be non-increasing. If a fixed lower boundary is 
-#' used, lfix must be smaller than \eqn{\Phi^{-1}(1-\alpha)/2}{Phi(1-alpha)/2} 
+#'  specify the shape to the boundaries for the remaining analysis.
+#' By specifying u and l as NULL, a design using only the shapes given by
+#' ushape and lshape can be found for any sample sizes per stage and arm.
+#'
+#' The shape of the boundaries (ushape, lshape) are either using the
+#' predefined shapes following Pocock (1977), O'Brien & Fleming (1979)
+#' or the triangular Test (Whitehead, 1997) using options "pocock", "obf" or
+#' "triangular" respectively, are constant (option "fixed") or supplied in as
+#' a function. If a function is passed it should require exactly one argument
+#' specifying the number of stages and return a vector of the same length.
+#' The lower boundary shape is required to be non-decreasing while the upper
+#' boundary shape needs to be non-increasing. If a fixed lower boundary is
+#' used, lfix must be smaller than \eqn{\Phi^{-1}(1-\alpha)/2}{Phi(1-alpha)/2}
 #' to ensure that it is smaller than the upper boundary.
-#' @return An object of the class MAMS containing the following components: \cr 
-#' \item{l}{Lower boundary.} 
+#' @return An object of the class MAMS containing the following components: \cr
+#' \item{l}{Lower boundary.}
 #' \item{u}{Upper boundary.}
 #' \item{n}{Sample size on control in stage 1.}
 #' \item{N}{Maximum total sample size.}
@@ -2013,28 +2110,28 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
 #' \item{J}{Number of stages in the trial.}
 #' \item{alpha}{Familywise error rate.}
 #' \item{power}{Power under least favorable configuration.}
-#' \item{rMat}{Matrix of allocation ratios. First row corresponds to control 
+#' \item{rMat}{Matrix of allocation ratios. First row corresponds to control
 #' and second row to experimental treatments.}
 #' @author Thomas Jaki, Dominic Magirr and Dominique-Laurent Couturier
-#' @references 
-#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing 
-#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software, 
+#' @references
+#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing
+#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software,
 #' 88(4), 1-25. Link: doi:10.18637/jss.v088.i04
-#' 
-#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for 
+#'
+#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for
 #' multi-arm multi-stage clinical studies with treatment selection, Biometrika,
 #'  99(2), 494-501. Link: doi:10.1093/biomet/ass002
-#' 
-#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for 
-#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279. 
+#'
+#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for
+#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279.
 #' Link: doi:10.1002/sim.6183
-#' 
-#' Pocock S.J. (1977), Group sequential methods in the design and analysis of 
+#'
+#' Pocock S.J. (1977), Group sequential methods in the design and analysis of
 #' clinical trials, Biometrika, 64(2), 191-199.
-#' 
+#'
 #' O'Brien P.C., Fleming T.R. (1979), A multiple testing procedure for clinical
 #'  trials, Biometrics, 35(3), 549-556.
-#' 
+#'
 #' Whitehead J. (1997), The Design and Analysis of Sequential Clinical Trials,
 #' Wiley: Chichester, UK.
 #' @export
@@ -2042,37 +2139,37 @@ mams.plot.simultaneous <- function(x, ask = TRUE, which = 1:2, new = TRUE,
 #' \donttest{
 #' # Note that some of these examples may take a few minutes to run
 #' # 2-stage design with O'Brien & Fleming efficacy and zero futility boundary
-#' with 
-#' # equal sample size per arm and stage. Results are equivalent to using 
+#' with
+#' # equal sample size per arm and stage. Results are equivalent to using
 #'  mams(K=4, J=2, alpha=0.05, power=0.9, r=1:2, r0=1:2, ushape="obf",
 #'            lshape="fixed", lfix=0, sample.size=FALSE)
 #' new.bounds(K=4, J=2, alpha=0.05, nMat=matrix(c(10, 20), nrow=2, ncol=5),
-#' u=NULL, l=NULL, 
+#' u=NULL, l=NULL,
 #'            ushape="obf", lshape="fixed", lfix=0)
-#' # A 2-stage design that was designed to use an O'Brien & Fleming efficacy 
+#' # A 2-stage design that was designed to use an O'Brien & Fleming efficacy
 #' # and zero futility boundary with equal sample size per arm and stage (n=14).
-#' # The observed sample size after stage one are 10, 10, 18, 10, 13 for each 
-#' # arm while the original upper bounds used are (3.068, 2.169) for stage 1. 
+#' # The observed sample size after stage one are 10, 10, 18, 10, 13 for each
+#' # arm while the original upper bounds used are (3.068, 2.169) for stage 1.
 #' # The updated bounds are (3.068, 2.167).
-#' new.bounds(K=4, J=2, alpha=0.05, 
-#'      nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28), nrow=2, ncol=5), 
+#' new.bounds(K=4, J=2, alpha=0.05,
+#'      nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28), nrow=2, ncol=5),
 #'      u=3.068, l=0, ushape="obf", lshape="fixed", lfix=0)
-#'            
-#' # same using parallelisation via separate R sessions running in the 
+#'
+#' # same using parallelisation via separate R sessions running in the
 #' # background
 #' future::plan(multisession)
-#' new.bounds(K=4, J=2, alpha=0.05, 
-#'            nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28), 
-#'            nrow=2, ncol=5), 
+#' new.bounds(K=4, J=2, alpha=0.05,
+#'            nMat=matrix(c(10, 28, 10, 28, 18, 28, 10, 28, 13, 28),
+#'            nrow=2, ncol=5),
 #'            u=3.068, l=0, ushape="obf", lshape="fixed", lfix=0)
 #' future::plan("default")
 #' }
 new.bounds <- function(K = 3, J = 2, alpha = 0.05,
                            nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
                            u = NULL, l = NULL, ushape = "obf", lshape = "fixed",
-                           ufix = NULL, lfix = 0, N = 20, parallel = TRUE, 
+                           ufix = NULL, lfix = 0, N = 20, parallel = TRUE,
                                                                 print = TRUE) {
-  # require(mvtnorm) ## the function pmvnorm is required to evaluate 
+  # require(mvtnorm) ## the function pmvnorm is required to evaluate
   # multivariate normal probabilities
 
   ##############################################################################
@@ -2177,7 +2274,7 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
       )
     } else {
       evs <- apply(mmp$X, 1, R_prodsum1_nb,
-        l = lb, u = ub, R = R, r0 = r0, r0diff = r0diff, J = J, K = K, 
+        l = lb, u = ub, R = R, r0 = r0, r0diff = r0diff, J = J, K = K,
         Sigma = Sigma
       )
     }
@@ -2296,7 +2393,7 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
   ################################
 
   if (print) {
-    message("   i) find new lower and upper boundaries\n      ", 
+    message("   i) find new lower and upper boundaries\n      ",
             appendLF = FALSE)
   }
 
@@ -2414,15 +2511,15 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 ###############################################################################
 #' Function to design multi-arm multi-stage studies with ordinal or binary
 #'  endpoints
-#' @description The function determines (approximately) the boundaries of a 
-#' multi-arm multi-stage study with ordinal or binary endpoints for a given 
+#' @description The function determines (approximately) the boundaries of a
+#' multi-arm multi-stage study with ordinal or binary endpoints for a given
 #' boundary shape and finds the required number of subjects.
 #' @param prob Vector of expected probabilities of falling into each category
-#' under control conditions. The elements must sum up to one 
+#' under control conditions. The elements must sum up to one
 #' (default=c(0.35, 0.4, 0.25)).
-#' @param or Interesting treatment effect on the scale of odds ratios 
+#' @param or Interesting treatment effect on the scale of odds ratios
 #' (default=2).
-#' @param or0 Uninteresting treatment effect on the scale of odds ratios 
+#' @param or0 Uninteresting treatment effect on the scale of odds ratios
 #' (default=1.2).
 #' @param K Number of experimental treatments (default=4).
 #' @param J Number of stages (default=2).
@@ -2430,7 +2527,7 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 #' @param power Desired power (default=0.9).
 #' @param r Vector of allocation ratios (default=1:2).
 #' @param r0 	Vector ratio on control (default=1:2).
-#' @param ushape 	Shape of upper boundary. Either a function specifying the 
+#' @param ushape 	Shape of upper boundary. Either a function specifying the
 #' shape or one of "pocock", "obf" (the default), "triangular" and "fixed".
 #' @param lshape 	Shape of lower boundary. Either a function specifying the
 #'  shape or one of "pocock", "obf", "triangular" and "fixed" (the default).
@@ -2442,8 +2539,8 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 #' (default=TRUE).
 #' @param Q Number of quadrature points per dimension in the outer integral
 #' (default=20).
-#' @param parallel if TRUE (default), allows parallelisation of the computation 
-#' via a user-defined strategy specified by means of the function 
+#' @param parallel if TRUE (default), allows parallelisation of the computation
+#' via a user-defined strategy specified by means of the function
 #' future::plan(). If not set differently, the default strategy is sequential,
 #'  which corresponds to a computation without parallelisation.
 #' @param print if TRUE (default), indicate at which stage the computation is.
@@ -2451,18 +2548,18 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 #'  a multi-arm multi-stage study with ordinal or binary endpoints with K active
 #'  treatments plus control in which all promising treatments are continued at
 #'  interim analyses as described in Magirr et al (2012). It is a wrapper around
-#'  the basic mams function to facilitate its use with ordinal and binary 
-#' endpoints, following ideas of Whitehead & Jaki (2009) and Jaki & Magirr 
-#' (2013). For a binary endpoint the vector prob has only two elements 
-#' (success/failure, yes/no, etc.). See mams for further details on the basic 
+#'  the basic mams function to facilitate its use with ordinal and binary
+#' endpoints, following ideas of Whitehead & Jaki (2009) and Jaki & Magirr
+#' (2013). For a binary endpoint the vector prob has only two elements
+#' (success/failure, yes/no, etc.). See mams for further details on the basic
 #' methodology.
 #' @return An object of the class MAMS containing the following components: \cr
-#' \item{prob}{Vector of expected probabilities of falling into each category 
-#' under control conditions. The elements must sum up to one 
+#' \item{prob}{Vector of expected probabilities of falling into each category
+#' under control conditions. The elements must sum up to one
 #' (default=\code{c(0.35, 0.4, 0.25)}).}
-#'  \item{or}{Interesting treatment effect on the scale of odds ratios 
+#'  \item{or}{Interesting treatment effect on the scale of odds ratios
 #' (default=\code{2}).}
-#'  \item{or0}{Uninteresting treatment effect on the scale of odds ratios 
+#'  \item{or0}{Uninteresting treatment effect on the scale of odds ratios
 #' (default=\code{1.2}).}
 #'  \item{K}{Number of experimental treatments (default=\code{4}).}
 #'  \item{J}{Number of stages (default=\code{2}).}
@@ -2470,52 +2567,52 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 #'  \item{power}{Desired power (default=\code{0.9}).}
 #'  \item{r}{Vector of allocation ratios (default=\code{1:2}).}
 #'  \item{r0}{Vector ratio on control (default=\code{1:2}).}
-#'  \item{ushape}{Shape of upper boundary. Either a function specifying the 
-#' shape or one of \code{"pocock"}, \code{"obf"} (the default), 
+#'  \item{ushape}{Shape of upper boundary. Either a function specifying the
+#' shape or one of \code{"pocock"}, \code{"obf"} (the default),
 #' \code{"triangular"} and \code{"fixed"}.}
-#'  \item{lshape}{Shape of lower boundary. Either a function specifying the 
-#' shape or one of \code{"pocock"}, \code{"obf"}, \code{"triangular"} and 
+#'  \item{lshape}{Shape of lower boundary. Either a function specifying the
+#' shape or one of \code{"pocock"}, \code{"obf"}, \code{"triangular"} and
 #' \code{"fixed"} (the default).}
-#'  \item{ufix}{Fixed upper boundary (default=\code{NULL}). Only used if 
+#'  \item{ufix}{Fixed upper boundary (default=\code{NULL}). Only used if
 #' \code{shape="fixed"}.}
-#'  \item{lfix}{Fixed lower boundary (default=\code{0}). Only used if 
+#'  \item{lfix}{Fixed lower boundary (default=\code{0}). Only used if
 #' \code{shape="fixed"}.}
-#'  \item{nstart}{Starting point for finding the sample size 
+#'  \item{nstart}{Starting point for finding the sample size
 #' (default=\code{1}).}
-#'  \item{nstop}{Stopping point for finding the sample size 
+#'  \item{nstop}{Stopping point for finding the sample size
 #' (default=\code{NULL}).}
-#'  \item{sample.size}{Logical if sample size should be found as well 
+#'  \item{sample.size}{Logical if sample size should be found as well
 #' (default=\code{TRUE}).}
-#'  \item{N}{Number of quadrature points per dimension in the outer integral 
+#'  \item{N}{Number of quadrature points per dimension in the outer integral
 #' (default=\code{20}).}
-#'  \item{parallel}{if \code{TRUE} (default), allows parallelisation of the 
-#' computation via a user-defined strategy specified by means of the function 
-#' \code{\link[future:plan]{future::plan()}}. If not set differently, 
-#' the default strategy is \code{sequential}, which corresponds to a 
+#'  \item{parallel}{if \code{TRUE} (default), allows parallelisation of the
+#' computation via a user-defined strategy specified by means of the function
+#' \code{\link[future:plan]{future::plan()}}. If not set differently,
+#' the default strategy is \code{sequential}, which corresponds to a
 #' computation without parallelisation.}
-#'  \item{print}{if \code{TRUE} (default), indicate at which stage the 
+#'  \item{print}{if \code{TRUE} (default), indicate at which stage the
 #' computation is.}
 #' @author Philip Pallmann
-#' @references 
-#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing 
-#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software, 
+#' @references
+#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing
+#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software,
 #' 88(4), 1-25. Link: doi:10.18637/jss.v088.i04
-#' 
-#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for 
-#' multi-arm multi-stage clinical studies with treatment selection, Biometrika, 
+#'
+#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for
+#' multi-arm multi-stage clinical studies with treatment selection, Biometrika,
 #' 99(2), 494-501. Link: doi:10.1093/biomet/ass002
-#' 
-#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for 
-#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279. Link: 
+#'
+#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for
+#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279. Link:
 #' doi:10.1002/sim.6183
-#' 
-#' Pocock S.J. (1977), Group sequential methods in the design and analysis of 
+#'
+#' Pocock S.J. (1977), Group sequential methods in the design and analysis of
 #' clinical trials, Biometrika, 64(2), 191-199.
-#' 
-#' O'Brien P.C., Fleming T.R. (1979), A multiple testing procedure for clinical 
+#'
+#' O'Brien P.C., Fleming T.R. (1979), A multiple testing procedure for clinical
 #' trials, Biometrics, 35(3), 549-556.
-#' 
-#' Whitehead J. (1997), The Design and Analysis of Sequential Clinical Trials, 
+#'
+#' Whitehead J. (1997), The Design and Analysis of Sequential Clinical Trials,
 #' Wiley: Chichester, UK.
 #' @export
 #' @examples
@@ -2534,10 +2631,10 @@ new.bounds <- function(K = 3, J = 2, alpha = 0.05,
 #'                  lshape="triangular", parallel=TRUE)
 #' future::plan("default")
 #' }
-ordinal.mams <- function(prob = c(0.35, 0.4, 0.25), or = 2, or0 = 1.2, 
-                              K = 4, J = 2, alpha = 0.05, power = 0.9, r = 1:2, 
-                              r0 = 1:2, ushape = "obf", lshape = "fixed", 
-                              ufix = NULL, lfix = 0, nstart = 1, nstop = NULL, 
+ordinal.mams <- function(prob = c(0.35, 0.4, 0.25), or = 2, or0 = 1.2,
+                              K = 4, J = 2, alpha = 0.05, power = 0.9, r = 1:2,
+                              r0 = 1:2, ushape = "obf", lshape = "fixed",
+                              ufix = NULL, lfix = 0, nstart = 1, nstop = NULL,
                               sample.size = TRUE, Q = 20, parallel = TRUE,
                               print = TRUE) {
   if (sum(prob) != 1) {
@@ -2568,7 +2665,7 @@ ordinal.mams <- function(prob = c(0.35, 0.4, 0.25), or = 2, or0 = 1.2,
 ###############################################################################
 ###################### stepdown.mams function #################################
 ###############################################################################
-#' Function to find stopping boundaries for a 2- or 3-stage (step-down) 
+#' Function to find stopping boundaries for a 2- or 3-stage (step-down)
 #' multiple-comparisons-with-control test.
 #' @description The function determines stopping boundaries for all intersection
 #'  hypothesis tests in a multi-arm multi-stage study, given the amount of alpha
@@ -2576,49 +2673,49 @@ ordinal.mams <- function(prob = c(0.35, 0.4, 0.25), or = 2, or0 = 1.2,
 #' @usage stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
 #'              alpha.star=c(0.01, 0.025), lb=0,
 #'              selection="all.promising")
-#' @param nMat 	Matrix containing the cumulative sample sizes in each treatment 
-#' arm columns: control, trt 1, ..., trt K), at each analysis (rows). 
-#' The number of analyses must be either 2 or 3 (default=matrix(c(10, 20), 
+#' @param nMat 	Matrix containing the cumulative sample sizes in each treatment
+#' arm columns: control, trt 1, ..., trt K), at each analysis (rows).
+#' The number of analyses must be either 2 or 3 (default=matrix(c(10, 20),
 #' nrow=2, ncol=4)).
-#' @param alpha.star 	Cumulative familywise error rate to be spent at each 
+#' @param alpha.star 	Cumulative familywise error rate to be spent at each
 #' analysis (default=c(0.01, 0.025)).
 #' @param lb Fixed lower boundary (default=0).
-#' @param selection How are treatments selected for the next stage? Using the 
-#' default "all.promising" method, all treatments with a test statistic 
-#' exceeding the lower boundary are taken forward to the next stage. 
-#' If "select.best", only the treatment with the largest statistic may be 
+#' @param selection How are treatments selected for the next stage? Using the
+#' default "all.promising" method, all treatments with a test statistic
+#' exceeding the lower boundary are taken forward to the next stage.
+#' If "select.best", only the treatment with the largest statistic may be
 #' selected for future stages. (default="all.promising").
 #' @details The function implements the methods described in Magirr et al (2014)
 #'  to find individual boundaries for all intersection hypotheses.
-#' @return An object of the class MAMS.stepdown containing the following 
-#' components: \cr 
-#' \item{l}{Lower boundaries.} 
+#' @return An object of the class MAMS.stepdown containing the following
+#' components: \cr
+#' \item{l}{Lower boundaries.}
 #'  \item{u}{Upper boundaries.}
 #'  \item{nMat}{Cumulative sample sizes on each treatment arm.}
 #'  \item{K}{Number of experimental treatments.}
 #'  \item{J}{Number of stages in the trial.}
 #'  \item{alpha.star}{Cumulative familywise error rate spent at each analysis.}
 #'  \item{selection}{Pre-specified method of treatment selection.}
-#'  \item{zscores}{A list containing the observed test statistics at analyses 
+#'  \item{zscores}{A list containing the observed test statistics at analyses
 #' so far (at the design stage this is NULL).}
-#'  \item{selected.trts}{A list containing the treatments selected for 
+#'  \item{selected.trts}{A list containing the treatments selected for
 #' each stage.}
 #' @author Dominic Magirr
-#' @references 
-#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing 
-#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software, 
+#' @references
+#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing
+#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software,
 #' 88(4), 1-25. Link: doi:10.18637/jss.v088.i04
-#' 
-#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for 
+#'
+#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for
 #' multi-arm multi-stage clinical studies with treatment selection, Biometrika,
 #'  99(2), 494-501. Link: doi:10.1093/biomet/ass002
-#' 
-#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for 
-#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279. 
+#'
+#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for
+#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279.
 #' Link: doi:10.1002/sim.6183
-#' 
-#' Stallard N. and Todd S. (2003), Sequential designs for phase III clinical 
-#' trials incorporating treatment selection, Statistics in Medicine, 22(5), 
+#'
+#' Stallard N. and Todd S. (2003), Sequential designs for phase III clinical
+#' trials incorporating treatment selection, Statistics in Medicine, 22(5),
 #' 689-703.
 #' @export
 #' @examples
@@ -2626,21 +2723,21 @@ ordinal.mams <- function(prob = c(0.35, 0.4, 0.25), or = 2, or0 = 1.2,
 #' # Note that some of these examples may take a few minutes to run
 #' # 2-stage 3-treatments versus control design, all promising treatments
 #' # are selected:
-#' stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4), 
-#'               alpha.star=c(0.01, 0.05), lb=0, 
+#' stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
+#'               alpha.star=c(0.01, 0.05), lb=0,
 #'               selection="all.promising")
 #' # select the best treatment after the first stage:
-#' stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4), 
-#'               alpha.star=c(0.01, 0.05), lb=0, 
+#' stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
+#'               alpha.star=c(0.01, 0.05), lb=0,
 #'               selection="select.best")
 #' # 3 stages and unequal randomization:
-#' stepdown.mams(nMat=matrix(c(20, 40, 60, rep(c(10, 20, 30), 3)), 
-#'               nrow=3, ncol=4), 
-#'               alpha.star=c(0.01, 0.025, 0.05), lb=c(0, 0.75), 
+#' stepdown.mams(nMat=matrix(c(20, 40, 60, rep(c(10, 20, 30), 3)),
+#'               nrow=3, ncol=4),
+#'               alpha.star=c(0.01, 0.025, 0.05), lb=c(0, 0.75),
 #'               selection="all.promising")
 #' }
 stepdown.mams <- function(nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
-                              alpha.star = c(0.01, 0.025), lb = 0, 
+                              alpha.star = c(0.01, 0.025), lb = 0,
                               selection = "all.promising") {
   # checking input parameters
   if (!all(diff(nMat) >= 0)) {
@@ -2778,7 +2875,7 @@ stepdown.mams <- function(nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
     for (i in 1:(stage - 1)) contrast[K + i, K + i] <- 1
 
     bar.cov.matrix <- contrast %*% cov.matrix[c(1:K, 1:(stage - 1) *
-      K + selected.treatment), c(1:K, 1:(stage - 1) * K + 
+      K + selected.treatment), c(1:K, 1:(stage - 1) * K +
                                                         selected.treatment)] %*%
       t(contrast)
 
@@ -2837,7 +2934,7 @@ stepdown.mams <- function(nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
       return(1 - alpha.star[2] - sum(unlist(lapply(surviving.subsets,
         get.path.prob,
         cut.off = cut.off, treatments = treatments,
-        cov.matrix = cov.matrix, lb = lb, upper.boundary = upper.boundary, 
+        cov.matrix = cov.matrix, lb = lb, upper.boundary = upper.boundary,
         K = K, stage = stage
       ))))
     }
@@ -2881,9 +2978,9 @@ stepdown.mams <- function(nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
   alpha.star <- rep(list(alpha.star), 2^K - 1)
 
   for (i in 1:(2^K - 1)) {
-    names(u)[i] <- paste("U_{", paste(get.hyp(i), collapse = " "), "}", 
+    names(u)[i] <- paste("U_{", paste(get.hyp(i), collapse = " "), "}",
                                                                 sep = "")
-    names(l)[i] <- paste("L_{", paste(get.hyp(i), collapse = " "), "}", 
+    names(l)[i] <- paste("L_{", paste(get.hyp(i), collapse = " "), "}",
                                                                 sep = "")
     names(alpha.star)[i] <- paste("alpha.star.{",
       paste(get.hyp(i), collapse = " "), "}",
@@ -2928,96 +3025,96 @@ stepdown.mams <- function(nMat = matrix(c(10, 20), nrow = 2, ncol = 4),
 ###############################################################################
 ###################### stepdown.update function ###############################
 ###############################################################################
-#' Update the stopping boundaries of multi-arm multi-stage study at an interim 
-#' analysis, allowing for unplanned treatment selection and/or sample-size 
+#' Update the stopping boundaries of multi-arm multi-stage study at an interim
+#' analysis, allowing for unplanned treatment selection and/or sample-size
 #' reassessment.
-#' @description Function to update a planned multi-arm multi-stage design to 
+#' @description Function to update a planned multi-arm multi-stage design to
 #' account for unplanned adaptations.
-#' @param current.mams The planned step-down MAMS design prior to the current 
+#' @param current.mams The planned step-down MAMS design prior to the current
 #' interim analysis (=defaultstepdown.mams()).
-#' @param nobs Cumulative sample sizes observed on each treatment arm up to and 
+#' @param nobs Cumulative sample sizes observed on each treatment arm up to and
 #' including the current interim analysis.
-#' @param zscores Observed vector of test statistics at the current interim 
+#' @param zscores Observed vector of test statistics at the current interim
 #' analysis.
-#' @param selected.trts The set of experimental treatments to be taken forward 
-#' to the next stage of testing. This argument should be omitted at the final 
+#' @param selected.trts The set of experimental treatments to be taken forward
+#' to the next stage of testing. This argument should be omitted at the final
 #' analysis.
 #' @param nfuture A matrix of future cumulative sample sizes. The number of rows
-#'  must be equal to the originally planned number of stages (2 or 3) minus the 
-#' number of stages already observed. The number of columns must be equal to 
+#'  must be equal to the originally planned number of stages (2 or 3) minus the
+#' number of stages already observed. The number of columns must be equal to
 #' the number of treatment arms (default=NULL).
-#' @details The function implements the ideas described in Magirr et al. (2014) 
-#' to update a design according to unplanned design modifications. It takes as 
+#' @details The function implements the ideas described in Magirr et al. (2014)
+#' to update a design according to unplanned design modifications. It takes as
 #' input the planned multi-arm multi-stage design prior to the interim analysis,
-#'  together with the actually observed cumulative sample sizes and test 
-#' statistics. Treatments to be included in future stages, as well as future 
+#'  together with the actually observed cumulative sample sizes and test
+#' statistics. Treatments to be included in future stages, as well as future
 #' sample sizes, can be chosen without following pre-specified rules. The output
 #'  is a new multi-arm multi-stage design for the remaining stages such that the
 #'  familywise error remains controlled at the pre-specified level.
 #' @author Dominic Magirr
-#' @references 
-#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing 
-#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software, 
+#' @references
+#' Jaki T., Pallmann P. and Magirr D. (2019), The R Package MAMS for Designing
+#' Multi-Arm Multi-Stage Clinical Trials, Journal of Statistical Software,
 #' 88(4), 1-25. Link: doi:10.18637/jss.v088.i04
-#' 
-#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for 
-#' multi-arm multi-stage clinical studies with treatment selection, Biometrika, 
+#'
+#' Magirr D., Jaki T. and Whitehead J. (2012), A generalized Dunnett test for
+#' multi-arm multi-stage clinical studies with treatment selection, Biometrika,
 #' 99(2), 494-501. Link: doi:10.1093/biomet/ass002
-#' 
-#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for 
-#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279. 
+#'
+#' Magirr D., Stallard N. and Jaki T. (2014), Flexible sequential designs for
+#' multi-arm clinical trials, Statistics in Medicine, 33(19), 3269-3279.
 #' Link: doi:10.1002/sim.6183
-#' 
-#' Stallard N. and Todd S. (2003), Sequential designs for phase III clinical 
-#' trials incorporating treatment selection, Statistics in Medicine, 
+#'
+#' Stallard N. and Todd S. (2003), Sequential designs for phase III clinical
+#' trials incorporating treatment selection, Statistics in Medicine,
 #' 22(5), 689-703.
 #' @export
 #' @examples
 #' \donttest{
 #' # 2-stage 3-treatments versus control design
 #' # all promising treatments are selected:
-#' orig_mams <- stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4), 
-#'                            alpha.star=c(0.01, 0.05), lb=0, 
+#' orig_mams <- stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
+#'                            alpha.star=c(0.01, 0.05), lb=0,
 #'                            selection="all.promising")
-#' 
-#' # make adjustment for the observed sample sizes 
+#'
+#' # make adjustment for the observed sample sizes
 #' # not being exactly as planned:
-#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
-#'                  zscores=c(1.1, -0.5, 0.2), 
+#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11),
+#'                  zscores=c(1.1, -0.5, 0.2),
 #'                  selected.trts=1:3, nfuture=NULL)
-#' 
-#' # make adjustment for the observed sample sizes 
+#'
+#' # make adjustment for the observed sample sizes
 #' # not being exactly as planned. In addition, drop treatment 2:
-#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
-#'                  zscores=c(1.1, -0.5, 0.2), 
+#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11),
+#'                  zscores=c(1.1, -0.5, 0.2),
 #'                  selected.trts=c(1, 3), nfuture=NULL)
-#' 
-#' # make adjustment for the observed sample sizes not being 
-#' # exactly as planned. In addition, drop treatment 2. In addition, 
+#'
+#' # make adjustment for the observed sample sizes not being
+#' # exactly as planned. In addition, drop treatment 2. In addition,
 #' # double the planed cumulative second stage sample sizes:
-#' updated_mams <- stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
-#'                                  zscores=c(1.1, -0.5, 0.2), 
-#'                                  selected.trts=c(1, 3), 
-#'                                  nfuture=matrix(c(40, 40, 13, 40), 
+#' updated_mams <- stepdown.update(orig_mams, nobs=c(9, 8, 13, 11),
+#'                                  zscores=c(1.1, -0.5, 0.2),
+#'                                  selected.trts=c(1, 3),
+#'                                  nfuture=matrix(c(40, 40, 13, 40),
 #'                                  nrow=1, ncol=4))
-#' 
+#'
 #' # Account for the observed second stage sample sizes:
-#' stepdown.update(updated_mams, nobs=c(38, 41, 13, 36), 
-#'                 zscores=c(1.9, -Inf, 1.2), 
+#' stepdown.update(updated_mams, nobs=c(38, 41, 13, 36),
+#'                 zscores=c(1.9, -Inf, 1.2),
 #'                 selected.trts=NULL)
-#' 
-#' # 'select.best' design. Account for actually observed sample sizes 
+#'
+#' # 'select.best' design. Account for actually observed sample sizes
 #' # in first stage, and drop treatment 2:
-#' orig_mams <- stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4), 
-#'                            alpha.star=c(0.01, 0.05), lb=0, 
+#' orig_mams <- stepdown.mams(nMat=matrix(c(10, 20), nrow=2, ncol=4),
+#'                            alpha.star=c(0.01, 0.05), lb=0,
 #'                            selection="select.best")
-#' 
-#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11), 
-#'                  zscores=c(1.1, -0.5, 0.2), 
+#'
+#' stepdown.update(orig_mams, nobs=c(9, 8, 13, 11),
+#'                  zscores=c(1.1, -0.5, 0.2),
 #'                  selected.trts=c(1, 3), nfuture=NULL)
 #' }
 stepdown.update <- function(current.mams = stepdown.mams(), nobs = NULL,
-                                zscores = NULL, selected.trts = NULL, 
+                                zscores = NULL, selected.trts = NULL,
                                                 nfuture = NULL) {
   zscores <- c(current.mams$zscores, list(zscores))
 
@@ -3474,12 +3571,12 @@ stepdown.update <- function(current.mams = stepdown.mams(), nobs = NULL,
 ###############################################################################
 ###################### tite.mams function #####################################
 ###############################################################################
-#' @title Function to design multi-arm multi-stage studies with time-to-event 
+#' @title Function to design multi-arm multi-stage studies with time-to-event
 #' endpoints
-#' @description The function determines (approximately) the boundaries of a 
+#' @description The function determines (approximately) the boundaries of a
 #' multi-arm multi-stage study with time-to-event endpoints for a given boundary
 #' shape and finds the required number of events.
-#' @param hr Interesting treatment effect on the scale of hazard ratios 
+#' @param hr Interesting treatment effect on the scale of hazard ratios
 #' (default=2).
 #' @param hr0 Uninteresting treatment effect on the scale of hazard ratios
 #' (default=1.2).
@@ -3497,23 +3594,23 @@ stepdown.update <- function(current.mams = stepdown.mams(), nobs = NULL,
 #' @param lfix Fixed lower boundary (default=0). Only used if shape="fixed".
 #' @param nstart Starting point for finding the sample size (default=1).
 #' @param nstop Stopping point for finding the sample size (default=NULL).
-#' @param sample.size Logical if sample size should be found as well 
+#' @param sample.size Logical if sample size should be found as well
 #' (default=TRUE).
-#' @param Q Number of quadrature points per dimension in the outer integral 
+#' @param Q Number of quadrature points per dimension in the outer integral
 #' (default=20).
-#' @param parallel if TRUE (default), allows parallelisation of the computation 
-#' via a user-defined strategy specified by means of the function 
-#' future::plan(). If not set differently, the default strategy is sequential, 
+#' @param parallel if TRUE (default), allows parallelisation of the computation
+#' via a user-defined strategy specified by means of the function
+#' future::plan(). If not set differently, the default strategy is sequential,
 #' which corresponds to a computation without parallelisation.
 #' @param print if TRUE (default), indicate at which stage the computation is.
-#' @details This function finds the (approximate) boundaries and sample size of 
-#' a multi-arm multi-stage study with time-to-event endpoints with K active 
-#' treatments plus control in which all promising treatments are continued at 
-#' interim analyses as described in Magirr et al (2012). It is a wrapper around 
-#' the basic mams function to facilitate its use with time-to-event endpoints, 
-#' following ideas of Jaki & Magirr (2013). Note that the sample size is 
-#' calculated as the required number of events, from which the total sample 
-#' size can be estimated (e.g., Whitehead 2001). See ?mams for further details 
+#' @details This function finds the (approximate) boundaries and sample size of
+#' a multi-arm multi-stage study with time-to-event endpoints with K active
+#' treatments plus control in which all promising treatments are continued at
+#' interim analyses as described in Magirr et al (2012). It is a wrapper around
+#' the basic mams function to facilitate its use with time-to-event endpoints,
+#' following ideas of Jaki & Magirr (2013). Note that the sample size is
+#' calculated as the required number of events, from which the total sample
+#' size can be estimated (e.g., Whitehead 2001). See ?mams for further details
 #' on the basic methodology.
 #' @returns An object of the class MAMS containing the following components:
 #'\item{l}{Lower boundary.}
@@ -3525,7 +3622,7 @@ stepdown.update <- function(current.mams = stepdown.mams(), nobs = NULL,
 #'\item{alpha}{Familywise error rate.}
 #'\item{alpha.star}{Cumulative familywise error rate spent by each analysis.}
 #'\item{power}{Power under least favorable configuration.}
-#'\item{rMat}{Matrix of allocation ratios. First row corresponds to control 
+#'\item{rMat}{Matrix of allocation ratios. First row corresponds to control
 #' while subsequent rows are for the experimental treatments.}
 #' @author Philip Pallmann, Dominic Magirr
 #' @export
@@ -3535,10 +3632,10 @@ stepdown.update <- function(current.mams = stepdown.mams(), nobs = NULL,
 #' tite.mams(hr=2, hr0=1.5, K=3, J=2, alpha=0.05, power=0.9,
 #'           r=1:2, r0=1:2, ushape="triangular", lshape="triangular")
 #' }
-tite.mams <- function(hr = 1.5, hr0 = 1.1, K = 4, J = 2, alpha = 0.05, 
-                          power = 0.9, r = 1:2, r0 = 1:2, ushape = "obf", 
-                          lshape = "fixed", ufix = NULL, lfix = 0, nstart = 1, 
-                          nstop = NULL, sample.size = TRUE, Q = 20, 
+tite.mams <- function(hr = 1.5, hr0 = 1.1, K = 4, J = 2, alpha = 0.05,
+                          power = 0.9, r = 1:2, r0 = 1:2, ushape = "obf",
+                          lshape = "fixed", ufix = NULL, lfix = 0, nstart = 1,
+                          nstop = NULL, sample.size = TRUE, Q = 20,
                           parallel = TRUE, print = TRUE) {
   if (hr0 < 1) {
     stop("The uninteresting effect must be 1 or larger.")
@@ -3565,33 +3662,33 @@ tite.mams <- function(hr = 1.5, hr0 = 1.1, K = 4, J = 2, alpha = 0.05,
 ###############################################################################
 #' Generic print function for class MAMS.stepdown.
 #' @details
-#' print produces a brief summary of an object from class MAMS.stepdown 
+#' print produces a brief summary of an object from class MAMS.stepdown
 #' including boundaries and requires sample size if initially requested.
 #' @param x An output object of class MAMS
 #' @param digits Number of significant digits to be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return Text output.
 #' @export
-print.MAMS.stepdown <- function(x, digits=max(3, getOption("digits") - 4), 
+print.MAMS.stepdown <- function(x, digits=max(3, getOption("digits") - 4),
                                                                         ...) {
 # find the nth intersection hypothesis (positions of 1s in binary n)
-    get.hyp <- function(n) { 
+    get.hyp <- function(n) {
         indlength = ceiling(log(n)/log(2)+.0000001)
         ind = rep(0,indlength)
         newn=n
-        
+
         for (h in seq(1,indlength)){
             ind[h] = (newn / (2^(h-1))) %% 2
             newn = newn - ind[h]*2^(h-1)
         }
         seq(1,indlength)[ind==1]
     }
-    
-    cat(paste("Design parameters for a ", x$J, " stage trial with ", x$K, 
+
+    cat(paste("Design parameters for a ", x$J, " stage trial with ", x$K,
                                                 " treatments\n\n",sep=""))
     res <- t(x$sample.sizes)
     colnames(res)<-paste("Stage",1:x$J)
-    rownames(res) <- c("Cumulative sample size  (control):", 
+    rownames(res) <- c("Cumulative sample size  (control):",
             paste("Cumulative sample size per stage (treatment ", 1:x$K, "):"))
 
     print(res)
@@ -3600,9 +3697,9 @@ print.MAMS.stepdown <- function(x, digits=max(3, getOption("digits") - 4),
 
     for (i in 1:length(x$l)){
 
-        cat(paste("\nIntersection hypothesis H_{", 
+        cat(paste("\nIntersection hypothesis H_{",
                               paste(get.hyp(i), collapse = " "), "}:","\n\n"))
-        
+
         res <- matrix(NA,nrow=3,ncol=x$J)
         colnames(res)<-paste("Stage",1:x$J)
         rownames(res) <- c("Conditional error", "Upper boundary",
@@ -3610,7 +3707,7 @@ print.MAMS.stepdown <- function(x, digits=max(3, getOption("digits") - 4),
         res[1,] <- x$alpha.star[[i]]
         res[2,] <- x$u[[i]]
         res[3,] <- x$l[[i]]
-  
+
         print(res)
 
     }
@@ -3621,14 +3718,14 @@ print.MAMS.stepdown <- function(x, digits=max(3, getOption("digits") - 4),
 ###############################################################################
 #' Generic summary function for class MAMS.stepdown.
 #' @details
-#' print produces a brief summary of an object from class MAMS.stepdown 
+#' print produces a brief summary of an object from class MAMS.stepdown
 #' including boundaries and requires sample size if initially requested.
 #' @param object An output object of class MAMS
 #' @param digits Number of significant digits to be printed.
 #' @param ... Further arguments passed to or from other methods.
 #' @return Text output.
 #' @export
-summary.MAMS.stepdown <-function(object, 
+summary.MAMS.stepdown <-function(object,
                           digits=max(3, getOption("digits") - 4), ...) {
 
   print(object)
@@ -3657,7 +3754,7 @@ summary.MAMS.stepdown <-function(object,
 #' for more details.
 #' @param las A specification of the axis labeling style. The default `1`
 #' ensures the labels are always horizontal. See `?par` for details.
-#' @param bty Should a box be drawn around the legend? The default \code{"n"} 
+#' @param bty Should a box be drawn around the legend? The default \code{"n"}
 #' does not draw a box, the alternative option \code{"o"} does.
 #' @param ... Further arguments passed to or from other methods.
 #' @return Graphic output.
@@ -3670,22 +3767,22 @@ summary.MAMS.stepdown <-function(object,
 #'
 #' plot(res)
 #' }
-plot.MAMS.stepdown <- function(x, col=NULL, pch=NULL, lty=NULL, main=NULL, 
-xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", las=1, 
+plot.MAMS.stepdown <- function(x, col=NULL, pch=NULL, lty=NULL, main=NULL,
+xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", las=1,
                                                                           ...) {
 # find the nth intersection hypothesis (positions of 1s in binary n)
-    get.hyp <- function(n) { 
+    get.hyp <- function(n) {
         indlength = ceiling(log(n)/log(2)+.0000001)
         ind = rep(0,indlength)
         newn=n
-        
+
         for (h in seq(1,indlength)){
             ind[h] = (newn / (2^(h-1))) %% 2
             newn = newn - ind[h]*2^(h-1)
         }
         seq(1,indlength)[ind==1]
     }
-    
+
     if (is.null(type)) type<-"p"
     if (is.null(bty)) bty<-"n"
     if (is.null(pch)) pch<-1
@@ -3697,18 +3794,18 @@ xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", las=1,
     if (is.null(lty)) lty<-2
     if (is.null(ylim)) {
 
-        lmin <- min(unlist(lapply(x$l, 
+        lmin <- min(unlist(lapply(x$l,
                                     function(a) min(a[(a!=Inf) & (a!=-Inf)]))))
-        if (!is.null(x$zscores)) lmin <- min(lmin, 
+        if (!is.null(x$zscores)) lmin <- min(lmin,
                               min(unlist(x$zscores)[unlist(x$zscores) != -Inf]))
-        umax <- max(unlist(lapply(x$u, 
+        umax <- max(unlist(lapply(x$u,
                                     function(a) max(a[(a!=Inf) & (a!=-Inf)]))))
         r <- umax - lmin
         ylim <- c(lmin - r/6, umax + r/6)
-        
+
     }
-    
-    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, main=main, 
+
+    matplot(1:x$J, cbind(x$l[[1]], x$u[[1]]), type=type, pch=pch, main=main,
               col=0, ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, las=las, ...)
     mtext(1:x$J,side=1,at=1:x$J)
     #  axis(side=2)
@@ -3724,28 +3821,28 @@ xlab="Analysis", ylab="Test statistic", ylim=NULL, type=NULL, bty="n", las=1,
             }
         }
     }
-        
 
-    
+
+
     legend.text <- NULL
-    
+
     #if (length(col) < length(x$l)) col <- rep(col, length(x$l))
-        
+
     for (i in 1:length(x$l)){
-        legend.text <- c(legend.text, paste("H_{", 
+        legend.text <- c(legend.text, paste("H_{",
                                       paste(get.hyp(i), collapse = " "), "}"))
         legend.col <- c(col, i)
         if ((x$alpha.star[[i]][x$J] > 0) && (x$alpha.star[[i]][x$J] < 1)) {
-            
-            matpoints(1:x$J, cbind(x$l[[i]], x$u[[i]]), type=type, pch=pch, 
+
+            matpoints(1:x$J, cbind(x$l[[i]], x$u[[i]]), type=type, pch=pch,
                   col=col[i], ylab=ylab, xlab=xlab, ylim=ylim, axes=FALSE, ...)
 
             lines(x$u[[i]],lty=lty, col=col[i])
             lines(x$l[[i]][1:(x$J)],lty=lty, col=col[i])
         }
-        
-      
-        
+
+
+
     }
 
     legend("bottomright", legend=legend.text, bty=bty, lty=lty, col=col)

@@ -115,7 +115,7 @@ MAMSNews <- function() {
 #'  treatment and control perform equally well.
 #'  The advantage of this parameterization is that no knowledge about the
 #'  variance is required. To convert traditional effect sizes, 
-#'  δ\eqn{\delta}{delta}
+#'  \eqn{\delta}{delta}
 #'  to this format use 
 #'  \eqn{p=\Phi(\frac{\delta}{\sqrt{2}\sigma})}{Phi(delta/(2^0.5*sigma))}.
 #'  Alternatively, the interesting and uninteresting effect size can also be
@@ -155,13 +155,13 @@ MAMSNews <- function() {
 #' @references
 #' Jaki T., Pallmann P., and Magirr D. (2019), \emph{The R Package MAMS for
 #' Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of
-#' Statistical Software}, 88(4), 1-25. Link:
-#' \doi{https://doi.org/10.18637/jss.v088.i04}
+#' Statistical Software}, 88(4), 1-25.
+#' Link: \doi{10.18637/jss.v088.i04}
 #'
 #' Magirr D., Jaki T., and Whitehead J. (2012), \emph{A generalized Dunnett test
 #' for multi-arm multi-stage clinical studies with treatment selection},
 #' \bold{Biometrika}, 99(2), 494-501. Link:
-#' \doi{https://doi.org/10.1093/biomet/ass002}
+#' \doi{10.1093/biomet/ass002}
 #'
 #' Pocock S.J. (1977), \emph{Group sequential methods in the design and analysis
 #' of clinical trials}, \bold{Biometrika}, 64(2), 191-199.
@@ -463,13 +463,13 @@ if (!is.null(final_params$delta)) {
 #' Jaki T., Pallmann P., and Magirr D. (2019), \emph{The R Package MAMS for
 #' Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of
 #' Statistical Software}, 88(4), 1-25. Link:
-#' \doi{https://doi.org/10.18637/jss.v088.i04}
+#' \doi{10.18637/jss.v088.i04}
 #'
 #' Magirr D., Jaki T., and Whitehead J. (2012), \emph{A generalized Dunnett test
 #' for multi-arm multi-stage clinical studies with treatment selection},
 #' \bold{Biometrika}, 99(2), 494-501. Link:
-#' \doi{https://doi.org/10.1093/biomet/ass002}
-#' @seealso [mams].
+#' \doi{10.1093/biomet/ass002}
+#' @seealso [mams], [MAMS].
 #' @keywords design
 #' @examples
 #' \donttest{

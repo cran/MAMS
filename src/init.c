@@ -3,9 +3,6 @@
 #include <stdlib.h> // for NULL
 #include <R_ext/Rdynload.h>
 
-/* FIXME:
-   Check these declarations against the C/Fortran source code.
-*/
 
 /* .Call calls */
 extern SEXP C_prodsum1(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);

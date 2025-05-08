@@ -18,6 +18,16 @@ Question or suggestions about the package can be sent to
    thomas.jaki@pm.me
 
 --------------------CHANGE LOG--------------------------------------------
+Version 3.0.1
+
+  o  Added handling allocation ratios at the first stage when the control arm 
+  is greater than 1 (thanks to Peter Greenstreet for the feedback)
+  o  Added extra checks for input parameters of allocation ratios
+  o  Fixed 'maximum iteration number' computation
+  o  renamed rows and cols in rMat for 'mams' object
+
+
+--------------------CHANGE LOG--------------------------------------------
 Version 3.0.0
 
   o  Added 2 new designs:
