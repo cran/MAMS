@@ -17,14 +17,25 @@ Question or suggestions about the package can be sent to
 
    thomas.jaki@pm.me
 
+
+--------------------CHANGE LOG--------------------------------------------
+Version 3.0.2
+
+  o  Fixed Cohen's d effect size estimates in the summary() function 
+      for "MAMS" objects
+  o  Fixed sample size calculation when J=1 and effect sizes were
+      specified via 'delta' arguments (i.e., delta, delta0 and sd)
+
+
 --------------------CHANGE LOG--------------------------------------------
 Version 3.0.1
 
-  o  Added handling allocation ratios at the first stage when the control arm 
-  is greater than 1 (thanks to Peter Greenstreet for the feedback)
+  o  Added handling allocation ratios at the first stage 
+     when the control arm is greater than 1 
+     (thanks to Peter Greenstreet for the feedback)
   o  Added extra checks for input parameters of allocation ratios
   o  Fixed 'maximum iteration number' computation
-  o  renamed rows and cols in rMat for 'mams' object
+  o  Renamed rows and cols in rMat for 'mams' object
 
 
 --------------------CHANGE LOG--------------------------------------------
@@ -35,9 +46,9 @@ Version 3.0.0
       method = 'dtl' for drop-the-losers design where 
       method = 'simultaneous' (default) corresponds to the MAMS with a 
       simultaneous stopping rule
-  o  refined the summary(), print() and plot() functions for "MAMS"
+  o  Refined the summary(), print() and plot() functions for "MAMS"
       objects accordingly
-  o  updated the C code  to compile with STRICT_R_HEADERS=1 (mandatory for 
+  o  Updated the C code  to compile with STRICT_R_HEADERS=1 (mandatory for 
       R >= 4.5.0)
 
 

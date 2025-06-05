@@ -287,6 +287,7 @@ mams.fit.dtl <- function(obj) {
       rho       <- obj$r[1] / (obj$r[1] + 1)
       corr      <- matrix(rho, obj$Kv[1], obj$Kv[1]) + diag(1 - rho, obj$Kv[1])
       quan      <- mvtnorm::qmvnorm(1 - obj$alpha, corr = corr)$quantile
+
       obj$nstop     <- 3*ceiling(((quan*sig[1]*sqrt(1 + 1/obj$r[1]) +
                                 stats::qnorm(obj$power)*
                   sqrt(sig[1]^2 + sig[1]^2/obj$r[1]))/delta)^2)
@@ -726,8 +727,8 @@ nMat  <- if (length(par$nMat) == 0) {
     R      <- t(as.matrix(nMat[, -1]/nMat[1, 1]))
   }
   n        <- nMat[1, 1]
-  if (is.numeric(pv)) {
-    deltas <- sqrt(2)*stats::qnorm(pv)
+  if (is.numeric(pv) && is.null(deltav)) {
+    deltas <- sqrt(2)*stats::qnorm(pv) 
     sig    <- 1
   } else {
     deltas <- deltav
@@ -1061,8 +1062,8 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
     }
     if (any(object$par$pv!=0.5)|!is.null(object$sim$H1)) {
       out = cbind(out, "|" = "|",
-                  cohen.d = round(c(object$par[["delta"]], 
-                                  rep(object$par[["delta0"]],
+                  cohen.d = round(c(object$par[["delta"]] / object$par$sig, 
+                                  rep(object$par[["delta0"]] / object$par$sig,
                                   object$Kv[1] - 1)),digits),
                   prob.scale = round(pnorm(c(object$par[["delta"]], 
                               rep(object$par[["delta0"]],

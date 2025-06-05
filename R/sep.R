@@ -380,9 +380,21 @@ mams.fit.sep <- function(obj) {
     }
     rho <- r / (r + r0)
     corr <- matrix(rho, K, K) + diag(1 - rho, K)
-    quan <- mvtnorm::qmvnorm(1 - alpha, corr = corr)$quantile
-    n <- ((quan + stats::qnorm(power)) / ifelse(is.null(obj$p), delta,
-                                (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r)
+    if (obj$K == 1) {
+      quan <- qmvnorm(1 - obj$alpha, sigma = 1)$quantile
+    } else {
+      quan <- mvtnorm::qmvnorm(1 - alpha, corr = corr)$quantile   
+    }
+
+if (is.null(obj$p)) {
+    p  <- pnorm(delta / (sqrt(2) * obj[["sd"]]))
+    } else {
+    p <- obj[["p"]]
+    }
+    n <- ceiling(
+            ((quan + qnorm(power)) / (qnorm(p) * sqrt(2)))^2 * (1 + 1 / r))
+
+
   } else {
     if (r[1] > r0[1]) {
       r <- r / r0[1]
@@ -776,7 +788,8 @@ nMat  <- if (length(par$nMat) == 0) {
 
       rej <- ifelse(any(emat == 1, na.rm = TRUE), j, 0)
 
-      first <- any(emat[, 1] == 1) & all(emat[, 2:J] == 0)
+        seqStages <- if (J >= 2) 2:J else integer(0)
+        first     <- any(emat[, 1] == 1) & all(emat[, seqStages] == 0)
 
       all.remaining <- cbind(control, all.remaining)
 
@@ -1149,7 +1162,7 @@ cli_li("Assumed effect sizes per treatment arm:")
       object$par[["deltav"]] = sqrt(2) * qnorm(object$par$pv)
       }
         out = cbind(out, "|" = "|",
-          cohen.d = round(object$par[["deltav"]],digits),
+          cohen.d = round(object$par[["deltav"]] / object$par$sig, digits),
           prob.scale = round(pnorm(object$par[["deltav"]] / 
                             (sqrt(2)*object$par$sd)),
                               digits))

@@ -341,7 +341,6 @@ mams.typeII.simultaneous <- function(n, beta, l, u, r, r0, r0diff, J, K,
                                           sig, Sigma, mmp_j,
                                           parallel = parallel) {
 
-# browser()
 
   evs <- apply(mmp_j[[1]]$X, 1, mams.prodsum2.simultaneous,
     r = r, r0 = r0, K = K, u = u, delta = delta, delta0 = delta0, n = n,
@@ -562,15 +561,20 @@ for (j in 1:1) {
       treatment arm(s), using normalisation by r0[1] \n")
     }
     rho <- r / (r + r0)
-    # browser()
+
     corr <- matrix(rho, obj$K, obj$K) + diag(1 - rho, obj$K)
     if (obj$K == 1) {
       quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), sigma = 1)$quantile
     } else {
       quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), corr = corr)$quantile
     }
-    n <- ((quan + qnorm(obj$power)) / ifelse(is.null(obj$p), delta,
-                                (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r)
+
+    if (is.null(obj$p)) {
+    p  <- pnorm(delta / (sqrt(2) * obj[["sd"]]))
+    } else p <- obj[["p"]]
+    n <- ceiling(
+            ((quan + qnorm(obj$power)) / (qnorm(p) * sqrt(2)))^2 * (1 + 1 / r)) 
+
   } else {
 
     if (r[1] > r0[1]) {
@@ -591,7 +595,6 @@ for (j in 1:1) {
       if (obj$print) {
         message(" iii) perform sample size calculation\n", appendLF = FALSE)
       }
-          # browser()
       if (is.null(obj$nstop)) {
         nx <- obj$nstart
         po <- 0
@@ -608,54 +611,6 @@ for (j in 1:1) {
           ) < 0)
           }
 
-        # OLD
-          # nx <- obj$nstart
-          # po <- 0
-          # while (po == 0) {
-          #  nx <- nx + 1
-          #  po <- (mams.typeII.simultaneous(nx,
-          #    beta = 1 - obj$power, l = l, u = u,
-          #    r = r, r0 = r0, r0diff = r0diff, J = 1, K = obj$K,
-          #    delta = delta, delta0 = delta0,
-          #    sig = sig, Sigma = Sigma, mmp_j = mmp_j,
-          #    parallel = parallel
-          #  ) < 0)
-          # }
-        # FIX 1: not efficient 
-          # tmp = mams(K = obj$K, J=1, 
-          # alpha=obj$alpha,power = obj$power, 
-          # delta = delta, delta0 = delta0,sd = sig,
-          # parallel=parallel, print=FALSE, nsim=1000)
-          # nx = (tmp$rMat*ceiling(tmp$n))[2,1]        
-        # FIX 2: not correct but not too wrong
-        # nx <- obj$nstart
-        # po <- 0
-        # while (po == 0) {
-        #   nx <- nx + 1
-        #   po <- (mams.typeII.simultaneous(nx,
-        #     beta = 1 - obj$power, l = l[obj$J], u = u[obj$J],
-        #     r = r[obj$J], r0 = r0[obj$J], r0diff = r0diff, J = 1, K = obj$K,
-        #     delta = delta, delta0 = delta0,
-        #     sig = sig, Sigma = Sigma, mmp_j = mmp_j,
-        #     parallel = parallel
-        #   ) < 0)
-        # }
-    #   if (r0[1] > r[1]) {
-    #   r <- r / r0
-    #   r0 <- r0 / r0
-    # message("Allocation ratio for control arm at first stage greater than for
-    #   treatment arm(s), using normalisation by r0[1] \n")
-    # }
-    # rho <- r[obj$J] / (r[obj$J] + r0[obj$J])
-    # corr <- matrix(rho, obj$K, obj$K) + diag(1 - rho, obj$K)
-    # if (obj$K == 1) {
-    #   quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), sigma = 1)$quantile
-    # } else {
-    # quan <- qmvnorm(1 - obj$alpha, mean = rep(0, obj$K), corr = corr)$quantile
-    # }
-    #nx <- ((quan + qnorm(obj$power)) / ifelse(is.null(obj$p), delta,
-    #                         (qnorm(obj$p) * sqrt(2))))^2 * (1 + 1 / r[obj$J])
-    #     # result:
         iterations <- 3 * ceiling(nx)
 }
 nstop <- if (is.null(obj$nstop)) iterations else obj$nstop
@@ -1033,7 +988,6 @@ nMat  <- if (length(par$nMat) == 0) {
   # Create test statistics using independent normal increments in sample means:
   ##############################################################################
     # directly simulate means per group and time points:
-
     mukhats <-
       apply(matrix(rnorm(J * K), J, K) * sig * sqrt(Rdiff * n) + Rdiff * n *
         matrix(deltas, nrow = J, ncol = K, byrow = TRUE), 2, cumsum) / (R * n)
@@ -1099,7 +1053,6 @@ nMat  <- if (length(par$nMat) == 0) {
   ##
   ## simulation
   ##
-
   ## H1
   if (!all(pv == 0.5)) {
     # sim
@@ -1107,9 +1060,9 @@ nMat  <- if (length(par$nMat) == 0) {
     if (parallel) {
       H1$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0,
       deltas, sig, J, K, Rdiff, r0diff,
-        future.seed = TRUE
+        future.seed = TRUE, future.packages="MAMS"
       )
-      # , future.packages="MAMS"
+    
     } else {
       H1$full <- sapply(rep(n, nsim), sim, l, u, R, r0, deltas, sig, J,
       K, Rdiff, r0diff
@@ -1195,11 +1148,10 @@ nMat  <- if (length(par$nMat) == 0) {
     if (parallel) {
       H0$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0,
                                             rep(0, K), sig, J, K, Rdiff, r0diff,
-                                            future.seed = TRUE
+                                            future.seed = TRUE, 
+                                            future.packages="MAMS"
       )
-      # , future.packages="MAMS"
     } else {
-    # ! FIXME Check this statement: maybe it should be just sapply?
       H0$full <- sapply(rep(n, nsim), sim, l, u, R, r0,
                                             rep(0, K), sig, J, K, Rdiff, r0diff
       )
@@ -1448,13 +1400,14 @@ if (is.null(object$sim)) {
       abbr = paste0("T", 1:object$K),
       row.names = paste0("  Treatment ", 1:object$K)
     )
+
     hyp <- NULL
   if (!is.null(object$sim$H1) | (object$par$p!=0.5)) {
       if (is.null(object$par[["deltav"]])) {
       object$par[["deltav"]] = sqrt(2) * qnorm(object$par$pv)
       }
         out = cbind(out, "|" = "|",
-          cohen.d = round(object$par[["deltav"]],digits),
+          cohen.d = round(object$par[["deltav"]] / object$par$sig ,digits),
           prob.scale = round(pnorm(object$par[["deltav"]] /
                                                       (sqrt(2)*object$par$sd)),
                               digits))

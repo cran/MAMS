@@ -1,7 +1,7 @@
 Package: MAMS
 Type: Package
 Title: Designing Multi-Arm Multi-Stage Studies
-Version: 3.0.1
+Version: 3.0.2
 Authors@R: c(
   person("Thomas", "Jaki", role = c("aut", "cre"),
     email = "thomas.jaki@pm.me",
@@ -19,7 +19,7 @@ NeedsCompilation: yes
 Repository: CRAN
 Encoding: UTF-8
 RoxygenNote: 7.3.2.9000
-Packaged: 2025-05-07 15:57:33 UTC; Nikita
+Packaged: 2025-06-05 11:49:38 UTC; Nikita
 Author: Thomas Jaki [aut, cre] (ORCID: <https://orcid.org/0000-0002-1096-188X>),
   Dominique-Laurent Couturier [aut] (ORCID:
     <https://orcid.org/0000-0001-5774-5036>),
@@ -27,4 +27,4 @@ Author: Thomas Jaki [aut, cre] (ORCID: <https://orcid.org/0000-0002-1096-188X>),
   Nikita Mozgunov [aut] (ORCID: <https://orcid.org/0000-0003-0941-718X>),
   Philip Pallmann [aut]
 Maintainer: Thomas Jaki <thomas.jaki@pm.me>
-Date/Publication: 2025-05-08 09:10:02 UTC
+Date/Publication: 2025-06-05 13:30:06 UTC
