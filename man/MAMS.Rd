@@ -2,6 +2,26 @@
 % Please edit documentation in R/generic.R
 \name{mams}
 \alias{mams}
+\alias{MAMS}
+\alias{The}
+\alias{function}
+\alias{determines}
+\alias{the}
+\alias{boundaries}
+\alias{of}
+\alias{a}
+\alias{multi-arm}
+\alias{multi-stage}
+\alias{study}
+\alias{for}
+\alias{given}
+\alias{boundary}
+\alias{shape}
+\alias{and}
+\alias{finds}
+\alias{required}
+\alias{number}
+\alias{subjects.}
 \title{Function to design multi-arm multi-stage studies with normal endpoints}
 \usage{
 mams(obj = NULL, K=NULL, J=NULL, alpha=NULL, power=NULL, r=NULL, 
@@ -110,8 +130,7 @@ alternative), the expected sample size and standard deviation per group
 \item{input}{the list of all input parameters except K and J}
 }
 \description{
-The function determines the boundaries of a multi-arm multi-stage study
-for a given boundary shape and finds the required number of subjects.
+Function to design multi-arm multi-stage studies with normal endpoints
 }
 \details{
 This function finds the boundaries and sample size of a multi-arm multi-stage
@@ -249,8 +268,8 @@ mams(K=4, J=3, alpha=0.05, power=0.9, r=1:3, r0=1:3, p=0.65, p0=0.55,
 \references{
 Jaki T., Pallmann P., and Magirr D. (2019), \emph{The R Package MAMS for
 Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of
-Statistical Software}, 88(4), 1-25.
-Link: \doi{10.18637/jss.v088.i04}
+Statistical Software}, 88(4), 1-25. Link:
+\doi{10.18637/jss.v088.i04}
 
 Magirr D., Jaki T., and Whitehead J. (2012), \emph{A generalized Dunnett test
 for multi-arm multi-stage clinical studies with treatment selection},
@@ -270,7 +289,7 @@ design for multi-arm clinical trials. Statistical Methods in Medical
 Research. 2017;26(1):508-524. doi:10.1177/0962280214550759
 }
 \seealso{
-\link{new.bounds}, \link{ordinal.mams}, \link{tite.mams}.
+\link{new.bounds}, \link{ordinal.mams}, \link{tite.mams}, \link{MAMS}.
 }
 \author{
 Thomas Jaki, Dominic Magirr, Dominique-Laurent Couturier

@@ -1062,7 +1062,6 @@ nMat  <- if (length(par$nMat) == 0) {
       deltas, sig, J, K, Rdiff, r0diff,
         future.seed = TRUE, future.packages="MAMS"
       )
-    
     } else {
       H1$full <- sapply(rep(n, nsim), sim, l, u, R, r0, deltas, sig, J,
       K, Rdiff, r0diff
@@ -1148,9 +1147,10 @@ nMat  <- if (length(par$nMat) == 0) {
     if (parallel) {
       H0$full <- future.apply::future_sapply(rep(n, nsim), sim, l, u, R, r0,
                                             rep(0, K), sig, J, K, Rdiff, r0diff,
-                                            future.seed = TRUE, 
+                                            future.seed = TRUE,
                                             future.packages="MAMS"
       )
+  
     } else {
       H0$full <- sapply(rep(n, nsim), sim, l, u, R, r0,
                                             rep(0, K), sig, J, K, Rdiff, r0diff
@@ -1612,7 +1612,7 @@ if (is.null(object$sim)) {
       if (any(hyp == "H0")) {
         prob <- object$sim$H0$main$efficacy["Any rejected", object$J]
         text <- paste0(
-          "Estimated overall type I error (*) = ",
+          "Estimated overall type I error (\u00A7) = ",
           round(prob * 100, digits), "%, [",
           paste0(
             round(qbinom(
@@ -1757,7 +1757,7 @@ if (is.null(object$sim)) {
     # simulation
     if (!is.null(object$sim)) {
       cat(
-        "\n(*) Operating characteristics estimated by a simulation\n",
+        "\n(\u00A7) Operating characteristics estimated by a simulation\n",
         "   considering", as.integer(object$nsim), "Monte Carlo samples\n"
       )
       if (!is.null(object$sim$TIME) & extended) {

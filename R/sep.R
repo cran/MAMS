@@ -262,7 +262,7 @@ mams.fit.sep <- function(obj) {
   # design.
   typeII <- function(n, beta, l, u, r, r0, J, delta, sig, Sigma) {
     delta_sqrt_I <- delta * sqrt(1 / (sig^2 / (r0 * n) + sig^2 / (r * n)))
-  
+    
     pi <- stats::pnorm(u[1], mean = delta_sqrt_I[1], lower.tail = FALSE)
     if (J > 1) {
       for (j in 2:J) {
@@ -734,6 +734,7 @@ nMat  <- if (length(par$nMat) == 0) {
 # Treatment effect is specified by delta, delta0 and sig. Output is:
 # (1) rejection any hypothesis yes/no, (2) rejection first hypothesis yes/no,
     # (3) total sample size, (4) matrix of rejected hypotheses
+    # ^ORIGINAL
     sep_sim <- function(n, l, u, R, r0, delta, sig) {
       J <- dim(R)[1]
       K <- dim(R)[2]
@@ -788,8 +789,17 @@ nMat  <- if (length(par$nMat) == 0) {
 
       rej <- ifelse(any(emat == 1, na.rm = TRUE), j, 0)
 
-        seqStages <- if (J >= 2) 2:J else integer(0)
-        first     <- any(emat[, 1] == 1) & all(emat[, seqStages] == 0)
+        first <- apply(zks*emat, 2, function(x) {
+        x <- x[!is.na(x) & x != 0]
+        if (length(x) == 0) 0 else x[length(x)]
+        }
+        )
+        if (K == 1) {
+        first <- any(emat[, 1] == 1)
+        } else {
+        first= all(first[1]>first[2:length(first)])
+
+        }
 
       all.remaining <- cbind(control, all.remaining)
 
@@ -798,7 +808,6 @@ nMat  <- if (length(par$nMat) == 0) {
         futility = fmat, efficacy = emat, first = first
       ))
     }
-
   #### Perform the simulation study ###########################################
   # nMat[1,1] (1st stage, 1st group = control) is the reference for r0 and R
   # r0: attribution rate per stage of control
@@ -1367,7 +1376,7 @@ cli_li("Assumed effect sizes per treatment arm:")
       if (any(hyp == "H0")) {
         prob <- object$sim$H0$main$efficacy["Any rejected", object$J]
         text <- paste0(
-          "Estimated overall type I error (*) = ",
+          "Estimated overall type I error (\u00A7) = ",
           round(prob * 100, digits), "%, [",
           paste0(
             round(qbinom(
@@ -1512,7 +1521,7 @@ cli_li("Assumed effect sizes per treatment arm:")
     # simulation
     if (!is.null(object$sim)) {
       cat(
-        "\n(*) Operating characteristics estimated by a simulation\n",
+        "\n(\u00A7) Operating characteristics estimated by a simulation\n",
         "   considering", as.integer(object$nsim), "Monte Carlo samples\n"
       )
       if (!is.null(object$sim$TIME) & extended) {

@@ -1157,7 +1157,7 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
                             paste("Stage",1:object$J)})
       dimnames(out)[[2]][object$J] <- paste0(dimnames(out)[[2]][object$J],
                                                                 "\u2020")
-      shift = 13
+      shift = 12
       if (!is.null(object$sim)) {
         if (!is.null(object$sim$H1)) {
           tmp = cbind(NA,round(object$sim$H1$main$ess[,c("low","ess","high")],
@@ -1172,9 +1172,13 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
           out = cbind(out,tmp)
         }
         out = as.data.frame(apply(out,2,function(x) format(round(x,digits))))
-
-        total <- cumsum(object$n*object$Kv + rep(1, length(object$Kv))*object$n)
+        # !FIXME
+        # total <- cumsum(object$n*object$Kv + rep(1, length(object$Kv))*object$n)
+                total <- cumsum(object$n/object[["rMat"]][1,1] * 
+                                object[["rMat"]][2,1]*object$Kv + 
+                        rep(1, length(object$Kv))*object$n)
         total[length(total)] <- object$N
+               
         if (object$H0) {
             total <- c(total, NA, " ", format(object$N, nsmall = digits), " ",
                               NA, " ", format(object$N, nsmall = digits), " ")
@@ -1227,7 +1231,7 @@ mams.summary.dtl <- function(object, digits, extended=FALSE, ...) {
       if (!is.null(object$sim$H0)) {
           out = cbind(out,"|"="|", round(object$sim$H0$main$futility,digits))
       }
-      shift = 12
+      shift = 13
       space = cumsum(apply(rbind(out,colnames(out)),2,
                             function(x) max(nchar(x)))+1)
       bar   = which(names(space)=="|")

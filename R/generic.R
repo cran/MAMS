@@ -13,6 +13,8 @@ MAMSNews <- function() {
 }
 
 #' Function to design multi-arm multi-stage studies with normal endpoints
+#' @name mams
+#' @aliases mams MAMS
 #'
 #'The function determines the boundaries of a multi-arm multi-stage study
 #'for a given boundary shape and finds the required number of subjects.
@@ -155,8 +157,8 @@ MAMSNews <- function() {
 #' @references
 #' Jaki T., Pallmann P., and Magirr D. (2019), \emph{The R Package MAMS for
 #' Designing Multi-Arm Multi-Stage Clinical Trials}, \bold{Journal of
-#' Statistical Software}, 88(4), 1-25.
-#' Link: \doi{10.18637/jss.v088.i04}
+#' Statistical Software}, 88(4), 1-25. Link:
+#' \doi{10.18637/jss.v088.i04}
 #'
 #' Magirr D., Jaki T., and Whitehead J. (2012), \emph{A generalized Dunnett test
 #' for multi-arm multi-stage clinical studies with treatment selection},
@@ -174,7 +176,7 @@ MAMSNews <- function() {
 #' Wason J, Stallard N, Bowden J, Jennison C. A multi-stage drop-the-losers 
 #' design for multi-arm clinical trials. Statistical Methods in Medical 
 #' Research. 2017;26(1):508-524. doi:10.1177/0962280214550759
-#' @seealso [new.bounds], [ordinal.mams], [tite.mams].
+#' @seealso [new.bounds], [ordinal.mams], [tite.mams], [MAMS].
 #' @keywords design
 #' @export
 #' @examples

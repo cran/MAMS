@@ -17,6 +17,14 @@ Question or suggestions about the package can be sent to
 
    thomas.jaki@pm.me
 
+--------------------CHANGE LOG--------------------------------------------
+Version 3.0.3
+
+  o  Fixed DTL cumulative sample size calculation in summary function
+  o  Fixed print output for summary for DTL
+  o  Fixed subscript out of bounds error in separate stopping rules for J>K
+  o  Changed the way to define the probability of 'T1 being best'
+      when 'method = "sep"', now matching the logic of other methods.  
 
 --------------------CHANGE LOG--------------------------------------------
 Version 3.0.2
@@ -26,13 +34,12 @@ Version 3.0.2
   o  Fixed sample size calculation when J=1 and effect sizes were
       specified via 'delta' arguments (i.e., delta, delta0 and sd)
 
-
 --------------------CHANGE LOG--------------------------------------------
 Version 3.0.1
 
   o  Added handling allocation ratios at the first stage 
-     when the control arm is greater than 1 
-     (thanks to Peter Greenstreet for the feedback)
+      when the control arm is greater than 1 
+      (thanks to Peter Greenstreet for the feedback)
   o  Added extra checks for input parameters of allocation ratios
   o  Fixed 'maximum iteration number' computation
   o  Renamed rows and cols in rMat for 'mams' object
@@ -46,9 +53,9 @@ Version 3.0.0
       method = 'dtl' for drop-the-losers design where 
       method = 'simultaneous' (default) corresponds to the MAMS with a 
       simultaneous stopping rule
-  o  Refined the summary(), print() and plot() functions for "MAMS"
+  o  refined the summary(), print() and plot() functions for "MAMS"
       objects accordingly
-  o  Updated the C code  to compile with STRICT_R_HEADERS=1 (mandatory for 
+  o  updated the C code  to compile with STRICT_R_HEADERS=1 (mandatory for 
       R >= 4.5.0)
 
 
